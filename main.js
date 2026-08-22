@@ -1,12 +1,33 @@
 const { app: electronApp, BrowserWindow } = require('electron');
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
 const session = require('express-session');
 const axios = require('axios');
 
+function resolveBackendBase() {
+  const raw = process.env.BACKEND_URL || readConfiguredBackendUrl();
+  // strip trailing slash so URL concatenation (e.g. `${backendBase}/api/...`) never doubles up
+  return raw.replace(/\/+$/, '');
+}
+
+function readConfiguredBackendUrl() {
+  try {
+    const config = JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json'), 'utf8'));
+    const env = electronApp.isPackaged ? 'production' : 'development';
+    if (config[env]?.backendUrl) {
+      return config[env].backendUrl;
+    }
+  } catch (error) {
+    console.warn('Unable to read config.json, falling back to localhost:', error.message);
+  }
+
+  return 'http://localhost:8080';
+}
+
 const app = express();
 const port = process.env.PORT || 3000;
-const backendBase = process.env.BACKEND_URL || 'http://localhost:8080';
+const backendBase = resolveBackendBase();
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'renderer', 'views'));
@@ -136,26 +157,37 @@ function buildBackendUrl(req) {
 }
 
 async function proxyApi(req, res) {
+
+     if (!req.session?.user?.token) {
+    return res.status(401).json({ message: 'Not authenticated' });
+  }
   const headers = getSessionAuthHeaders(req, {
     'Content-Type': req.headers['content-type'] || 'application/json'
   });
 
   if (!headers.Authorization) {
+    console.warn(`[proxyApi] 403 - no session token for ${req.method} ${req.path}`);
     return res.status(403).json({ message: 'No auth token in session' });
   }
 
   try {
+    const backendUrl = buildBackendUrl(req);
     const backendResponse = await axios({
       method: req.method,
-      url: buildBackendUrl(req),
+      url: backendUrl,
       params: req.method === 'GET' ? req.query : undefined,
       data: req.method === 'GET' || req.method === 'HEAD' ? undefined : req.body,
       validateStatus: () => true,
       headers
     });
 
+    if (backendResponse.status >= 400) {
+      console.warn(`[proxyApi] backend ${backendResponse.status} for ${req.method} ${backendUrl}`, backendResponse.data);
+    }
+
     res.status(backendResponse.status).json(backendResponse.data);
   } catch (error) {
+    console.error(`[proxyApi] error calling backend for ${req.method} ${req.path}:`, error.message);
     res.status(error.response?.status || 502).json(error.response?.data || { message: 'Unable to reach backend service' });
   }
 }
@@ -324,6 +356,7 @@ function createWindow() {
 // Start Express, then Electron
 app.listen(port, () => {
   console.log(`Restaurant UI available at http://localhost:${port}`);
+  console.log(`Proxying API calls to backend: ${backendBase}`);
   electronApp.whenReady().then(createWindow);
 });
 

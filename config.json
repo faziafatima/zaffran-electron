@@ -1,0 +1,8 @@
+{
+  "development": {
+    "backendUrl": "http://localhost:8080"
+  },
+  "production": {
+    "backendUrl": "http://thezaffran.in:8080"
+  }
+}
