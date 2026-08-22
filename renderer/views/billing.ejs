@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="shortcut icon" href="../images/favicon.ico">
+  </head>
+  <body data-role="<%= role %>" data-user="<%= user %>">
+    <%- include('../partials/header.ejs') %>
+    <div class="app-shell">
+      <%- include('../partials/sidebar.ejs') %>
+      <main class="main-content">
+        <div class="topbar">
+          <div><h2>Billing</h2><p>Review open invoices and settle payments quickly.</p></div>
+          <div class="user-chip">Finance • Ready</div>
+        </div>
+        <section class="panel">
+          <table class="table">
+            <thead>
+              <tr><th>Invoice</th><th>Customer</th><th>Amount</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>#1001</td><td>Jared</td><td>$48.00</td><td><span class="status-pill warning">Pending</span></td></tr>
+              <tr><td>#1002</td><td>Mina</td><td>$92.00</td><td><span class="status-pill success">Paid</span></td></tr>
+            </tbody>
+          </table>
+        </section>
+      </main>
+    </div>
+    <script>
+      window.__APP_CONTEXT__ = {
+        role: "<%= role %>",
+        user: "<%= user %>",
+        restaurant: "<%= restaurant || '' %>"
+      };
+    </script>
+    <script src="/js/shared.js"></script>
+    <script src="/js/billing.js"></script>
+  </body>
+</html>

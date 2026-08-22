@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="shortcut icon" href="../images/favicon.ico">
+  </head>
+  <body data-role="<%= role %>" data-user="<%= user %>">
+    <%- include('../partials/header.ejs') %>
+    <div class="app-shell">
+      <%- include('../partials/sidebar.ejs') %>
+      <main class="main-content">
+        <div class="topbar">
+          <div><h2>Settings</h2><p>Adjust restaurant preferences and operational defaults.</p></div>
+          <div class="user-chip">Config • Secure</div>
+        </div>
+        <section class="panel">
+          <h3>Preferences</h3>
+          <form id="settingsForm">
+            <div class="field"><label for="settingsRestaurantName">Restaurant name</label><input id="settingsRestaurantName" value="Zaffaran Restaurant" /></div>
+            <div class="field"><label for="settingsOpeningHours">Opening hours</label><input id="settingsOpeningHours" value="09:00 - 23:00" /></div>
+            <div class="field"><label for="settingsCurrency">Currency</label><select id="settingsCurrency"><option>USD</option><option>EUR</option><option>INR</option></select></div>
+            <button type="submit">Save settings</button>
+            <p class="muted" id="settingsSaveMessage"></p>
+          </form>
+        </section>
+      </main>
+    </div>
+    <script>
+      window.__APP_CONTEXT__ = {
+        role: "<%= role %>",
+        user: "<%= user %>",
+        restaurant: "<%= restaurant || '' %>"
+      };
+    </script>
+    <script src="/js/shared.js"></script>
+    <script src="/js/settings.js"></script>
+  </body>
+</html>

@@ -1,0 +1,85 @@
+<%
+  const roleKey = String(role || 'admin').toLowerCase();
+  const activePath = (currentPath || '/').replace(/\/$/, '') || '/';
+  const isOrdersPath = activePath === '/orders' || activePath.startsWith('/orders/');
+  const isOpenOrdersPath = activePath === '/orders' || activePath === '/orders/open';
+  const isClosedOrdersPath = activePath === '/orders/closed';
+  const menuMap = {
+    'super admin': [
+      { label: 'Dashboard', path: '/dashboard', icon: '📊' },
+      { label: 'Menu', path: '/menu', icon: '🍽️' },
+      { label: 'Orders', path: '/orders', icon: '🧾' },
+      { label: 'Inventory', path: '/inventory', icon: '📦' },
+      { label: 'Expenses', path: '/expenses', icon: '💸' },
+      { label: 'Attendance', path: '/attendance', icon: '🕒' },
+      { label: 'Staff', path: '/staff', icon: '👥' },
+      { label: 'Roles', path: '/roles', icon: '🔐' },
+      { label: 'Users', path: '/users', icon: '🧑‍💼' },
+      { label: 'Restaurants', path: '/restaurants', icon: '🏬' },
+      { label: 'Discounts', path: '/discounts', icon: '🏷️' },
+      { label: 'Customers', path: '/customers', icon: '🤝' },
+      { label: 'Reports', path: '/reportsView', icon: '📈' },
+      { label: 'Day Cash', path: '/day-cash', icon: '💵' }
+    ],
+    admin: [
+      { label: 'Dashboard', path: '/dashboard', icon: '📊' },
+      { label: 'Menu', path: '/menu', icon: '🍽️' },
+      { label: 'Orders', path: '/orders', icon: '🧾' },
+      { label: 'Inventory', path: '/inventory', icon: '📦' },
+      { label: 'Expenses', path: '/expenses', icon: '💸' },
+      { label: 'Attendance', path: '/attendance', icon: '🕒' },
+      { label: 'Staff', path: '/staff', icon: '👥' },
+      { label: 'Discounts', path: '/discounts', icon: '🏷️' },
+      { label: 'Customers', path: '/customers', icon: '🤝' },
+      { label: 'Reports', path: '/reportsView', icon: '📈' },
+      { label: 'Day Cash', path: '/day-cash', icon: '💵' }
+    ],
+    manager: [
+      { label: 'Dashboard', path: '/dashboard', icon: '📊' },
+      { label: 'Menu', path: '/menu', icon: '🍽️' },
+      { label: 'Orders', path: '/orders', icon: '🧾' },
+      { label: 'Inventory', path: '/inventory', icon: '📦' },
+      { label: 'Expenses', path: '/expenses', icon: '💸' },
+      { label: 'Attendance', path: '/attendance', icon: '🕒' },
+      { label: 'Reports', path: '/reportsView', icon: '📈' },
+      { label: 'Day Cash', path: '/day-cash', icon: '💵' }
+    ],
+    staff: [
+      { label: 'Dashboard', path: '/dashboard', icon: '📊' },
+      { label: 'Orders', path: '/orders', icon: '🧾' }
+    ]
+  };
+  const items = menuMap[roleKey] || menuMap.admin;
+%>
+<aside class="sidebar">
+  <nav class="nav-list">
+    <% items.forEach(item => { %>
+      <% if (item.label !== 'Orders') { %>
+        <a class="nav-item <%= activePath === item.path ? 'active' : '' %>" href="<%= item.path %>">
+          <span class="nav-icon"><%= item.icon %></span>
+          <span class="nav-label"><%= item.label %></span>
+        </a>
+      <% } else { %>
+        <div class="nav-group nav-group-collapsible <%= isOrdersPath ? 'active expanded' : '' %>" data-nav-group>
+          <button
+            type="button"
+            class="nav-item nav-parent <%= isOrdersPath ? 'active' : '' %>"
+            data-nav-toggle
+            aria-expanded="<%= isOrdersPath ? 'true' : 'false' %>"
+            aria-controls="ordersSubmenu">
+            <span class="nav-parent-main">
+              <span class="nav-icon"><%= item.icon %></span>
+              <span class="nav-label"><%= item.label %></span>
+            </span>
+            <span class="nav-caret" aria-hidden="true">⌄</span>
+          </button>
+          <div class="nav-sublist" id="ordersSubmenu" <%= isOrdersPath ? '' : 'hidden' %>>
+            <a class="nav-subitem <%= isOpenOrdersPath ? 'active' : '' %>" href="/orders/open">Open Orders</a>
+            <a class="nav-subitem <%= isClosedOrdersPath ? 'active' : '' %>" href="/orders/closed">Closed Orders</a>
+          </div>
+        </div>
+      <% } %>
+    <% }) %>
+    <a class="nav-item" href="/logout">🚪 Logout</a>
+  </nav>
+</aside>

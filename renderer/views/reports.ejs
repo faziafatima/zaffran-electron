@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="shortcut icon" href="../images/favicon.ico">
+  </head>
+  <body data-role="<%= role %>" data-user="<%= user %>">
+    <%- include('../partials/header.ejs') %>
+    <div class="app-shell">
+      <%- include('../partials/sidebar.ejs') %>
+      <main class="main-content">
+        <div class="topbar">
+          <div><h2>Reports & insights</h2><p>Menu sales trends and high-demand items by period.</p></div>
+          <div class="user-chip">Analytics • Live</div>
+        </div>
+        <section class="panel reports-filter-panel">
+          <div class="reports-filter-grid">
+            <div class="field">
+              <label for="reportReferenceDate">Reference date</label>
+              <input id="reportReferenceDateFrom" type="date" />
+              <input id="reportReferenceDateTo" type="date" />
+            </div>
+            <div class="reports-filter-actions">
+              <button type="button" id="refreshReportButton">Refresh Reports</button>
+            </div>
+          </div>
+          <p class="muted" id="reportsMessage"></p>
+        </section>
+
+        <section class="grid cards reports-summary-cards" id="reportsSummaryCards"></section>
+
+        <section class="reports-period-grid" id="reportsPeriodGrid">
+          <article class="panel" id="dailySalesPanel">
+            <div class="section-head">
+              <div>
+                <h3>Daily sales report</h3>
+                <p class="muted" id="dailyReportRange"></p>
+              </div>
+              <button type="button" class="secondary" id="dailyExportCsvButton">Export CSV</button>
+            </div>
+            <div class="reports-demand" id="dailyDemandItems"></div>
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Menu item</th>
+                    <th>Qty sold</th>
+                    <th>Sales</th>
+                    <th>Share</th>
+                    <th>Demand</th>
+                  </tr>
+                </thead>
+                <tbody id="dailySalesRows"></tbody>
+              </table>
+            </div>
+          </article>
+
+          <article class="panel" id="weeklySalesPanel">
+            <div class="section-head">
+              <div>
+                <h3>Weekly sales report</h3>
+                <p class="muted" id="weeklyReportRange"></p>
+              </div>
+              <button type="button" class="secondary" id="weeklyExportCsvButton">Export CSV</button>
+            </div>
+            <div class="reports-demand" id="weeklyDemandItems"></div>
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Menu item</th>
+                    <th>Qty sold</th>
+                    <th>Sales</th>
+                    <th>Share</th>
+                    <th>Demand</th>
+                  </tr>
+                </thead>
+                <tbody id="weeklySalesRows"></tbody>
+              </table>
+            </div>
+          </article>
+
+          <article class="panel" id="monthlySalesPanel">
+            <div class="section-head">
+              <div>
+                <h3>Monthly sales report</h3>
+                <p class="muted" id="monthlyReportRange"></p>
+              </div>
+              <button type="button" class="secondary" id="monthlyExportCsvButton">Export CSV</button>
+            </div>
+            <div class="reports-demand" id="monthlyDemandItems"></div>
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Menu item</th>
+                    <th>Qty sold</th>
+                    <th>Sales</th>
+                    <th>Share</th>
+                    <th>Demand</th>
+                  </tr>
+                </thead>
+                <tbody id="monthlySalesRows"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+      </main>
+    </div>
+    <script>
+
+    </script>
+    <script src="/js/shared.js"></script>
+    <script src="/js/reports.js"></script>
+  </body>
+</html>

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="shortcut icon" href="../images/favicon.ico">
+  </head>
+  <body data-role="<%= role %>" data-user="<%= user %>">
+      <%- include('../partials/header.ejs') %>
+    <div class="app-shell">
+      <%- include('../partials/sidebar.ejs') %>
+      <main class="main-content">
+        <div class="page-heading">Day Cash Reconciliation</div>
+        <section class="panel reports-filter-panel">
+          <div class="reports-filter-grid">
+            <div class="field">
+              <label for="dayCashDate">Business Date</label>
+              <input id="dayCashDate" type="date" />
+            </div>
+            <div class="field reports-filter-actions">
+              <button type="button" id="refreshDayCashButton" class="ghost-button">Refresh</button>
+            </div>
+          </div>
+          <p class="muted" id="dayCashMessage"></p>
+        </section>
+
+        <section class="row">
+          <div class="panel col day-cash-panel">
+            <h3>Start Of Day</h3>
+            <div class="field">
+              <label for="openingCashInput">Opening Cash In Hand</label>
+              <input id="openingCashInput" type="number" step="0.01" min="0" />
+            </div>
+            <div class="field">
+              <label for="openingNoteInput">Opening Note (optional)</label>
+              <textarea id="openingNoteInput" rows="3"></textarea>
+            </div>
+            <div class="modal-actions">
+              <button type="button" id="saveOpeningCashButton">Save Opening Cash</button>
+            </div>
+          </div>
+
+          <div class="panel col day-cash-panel">
+            <h3>Close Day</h3>
+            <div class="field">
+              <label for="closingCashInput">Closing Cash In Hand</label>
+              <input id="closingCashInput" type="number" step="0.01" min="0" />
+            </div>
+            <div class="field">
+              <label for="closingNoteInput">Closing Note (optional)</label>
+              <textarea id="closingNoteInput" rows="3"></textarea>
+            </div>
+            <div class="modal-actions">
+              <button type="button" id="saveClosingCashButton" class="secondary">Save Closing Cash</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h3>Daily Summary</h3>
+          <div class="daycash-details-grid">
+            <div class="details-card purple"><span>Expected Closing Cash</span><strong id="summaryExpectedClosing">INR 0.00</strong></div>
+            <div class="details-card"><span>Opening Cash</span><strong id="summaryOpeningCash">INR 0.00</strong></div>
+            <div class="details-card"><span>Cash Income (Paid Orders)</span><strong id="summaryCashIncome">INR 0.00</strong></div>
+            <div class="details-card"><span>Cash Expense </span><strong id="summaryCashExpense">INR 0.00</strong></div>
+            <div class="details-card"><span>Declared Closing Cash</span><strong id="summaryDeclaredClosing">INR 0.00</strong></div>
+            <div class="details-card"><span>Discrepancy</span><strong id="summaryDiscrepancy">INR 0.00</strong></div>
+            <div class="details-card"><span>Status</span><strong id="summaryStatus">Not closed</strong></div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h3>Reconciliation History</h3>
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Opening</th>
+                  <th>Cash Income</th>
+                  <th>Expected Closing</th>
+                  <th>Declared Closing</th>
+                  <th>Discrepancy</th>
+                  <th>Status</th>
+                  <th>Opening Note</th>
+                  <th>Closing Note</th>
+                </tr>
+              </thead>
+              <tbody id="dayCashHistoryTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      window.__APP_CONTEXT__ = {
+        role: "<%= role %>",
+        user: "<%= user %>",
+        restaurant: "<%= restaurant || '' %>"
+      };
+    </script>
+    <script src="/js/shared.js"></script>
+    <script src="/js/day-cash.js"></script>
+  </body>
+</html>

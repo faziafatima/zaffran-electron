@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="shortcut icon" href="../images/favicon.ico">
+  </head>
+  <body data-role="<%= role %>" data-user="<%= user %>">
+    <%- include('../partials/header.ejs') %>
+    <div class="app-shell">
+      <%- include('../partials/sidebar.ejs') %>
+      <main class="main-content">
+        <div class="page-heading">Expense Reports</div>
+          <section class="panel reports-filter-panel">
+          <div class="reports-filter-grid">
+            <div class="field">
+              <label for="reportReferenceDate">Reference date</label>
+              <input id="reportReferenceDateFrom" type="date" />
+              <input id="reportReferenceDateTo" type="date" />
+            </div>
+            <div class="reports-filter-actions">
+              <button type="button" id="refreshReportButton">Search</button>
+              <a href="/reportsView" class="button">Back</a>
+            </div>
+          </div>
+          <p class="muted" id="reportsMessage"></p>
+        </section>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="expense">Restaurant Expense Report</div>
+    <div class="tab" data-tab="inventory">Staff Expense Report</div>
+  </div>
+
+  <div id="expense" class="tab-content active">
+    <h3>Restaurant Expense Report<button type="button" class="secondary" style="float:right;" id="expenseExportCsvButton">Export CSV</button></h3>
+          <article class="panel" id="expenseSalesPanel">
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Month</th>
+                    <th>Total Expenses</th>
+                  </tr>
+                </thead>
+                <tbody id="expenseSalesRows"></tbody>
+              </table>
+            </div>
+          </article>
+  </div>
+
+  <div id="inventory" class="tab-content">
+    <h3>Staff Expense Report <button type="button" class="secondary" style="float:right" id="staffExpenseExportCsvButton">Export CSV</button></h3>
+    <p class="muted" id="staffExpenseReportRange"></p>
+    <article class="panel" id="staffExpenseSalesPanel">
+          <div class="reports-demand" id="staffExpenseDemandItems"></div>
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Staff Name</th>
+                    <th>Expense Amount</th>
+                  </tr>
+                </thead>
+                <tbody id="staffExpenseSalesRows"></tbody>
+              </table>
+            </div>
+          </article>
+  </div>
+
+      </main>
+    </div>
+    <script src="/js/shared.js"></script>
+    <script src="/js/reports-expense.js"></script>
+    <script src="/js/reports-staff-expense.js"></script>
+  </body>
+</html>

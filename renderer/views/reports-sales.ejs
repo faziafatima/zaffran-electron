@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="shortcut icon" href="../images/favicon.ico">
+  </head>
+  <body data-role="<%= role %>" data-user="<%= user %>">
+    <%- include('../partials/header.ejs') %>
+    <div class="app-shell">
+      <%- include('../partials/sidebar.ejs') %>
+      <main class="main-content">
+        
+          <div class="page-heading">Sales Report</div>
+          <section class="panel reports-filter-panel">
+          <div class="reports-filter-grid">
+            <div class="field">
+              <label for="reportReferenceDate">Reference date</label>
+              <input id="reportReferenceDateFrom" type="date" />
+              <input id="reportReferenceDateTo" type="date" />
+            </div>
+            <div class="reports-filter-actions">
+              <button type="button" id="refreshReportButton">Search</button>
+              <a href="/reportsView" class="button">Back</a>
+            </div>
+          </div>
+          <p class="muted" id="reportsMessage"></p>
+        </section>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="sales">Daily Sales Report</div>
+    <div class="tab" data-tab="inventory">Weekly Menu Sale Report</div>
+    <div class="tab" data-tab="attendance">Monthly Menu Sales Report</div>
+    <!-- <div class="tab" data-tab="expenses">Expenses</div> -->
+  </div>
+
+  <div id="sales" class="tab-content active">
+    <h3>Daily Sales Report<button type="button" class="secondary" style="float:right;" id="salesExportCsvButton">Export CSV</button></h3>
+          <article class="panel" id="salesSalesPanel">
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Sales Date</th>
+                    <th>Total Orders</th>
+                    <th>Total Cash Payments</th>
+                    <th>Total Card Payments</th>
+                    <th>Total UPI Payments</th>
+                    <th>Total Sales</th>
+                    <th>Total Discounts</th>
+                    <th>Total Tax</th>
+                  </tr>
+                </thead>
+                <tbody id="salesSalesRows"></tbody>
+              </table>
+            </div>
+          </article>
+  </div>
+
+  <div id="inventory" class="tab-content">
+    <h3>Weekly Menu Sale Report <button type="button" class="secondary" style="float:right" id="weeklyExportCsvButton">Export CSV</button></h3>
+    <p class="muted" id="weeklyReportRange"></p>
+    <article class="panel" id="weeklySalesPanel">
+          <div class="reports-demand" id="weeklyDemandItems"></div>
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Menu item</th>
+                    <th>Qty sold</th>
+                    <th>Sales</th>
+                    <th>Share</th>
+                    <th>Demand</th>
+                  </tr>
+                </thead>
+                <tbody id="weeklySalesRows"></tbody>
+              </table>
+            </div>
+          </article>
+  </div>
+
+  <div id="attendance" class="tab-content">
+    <h3>Monthly Menu Sales Report<button type="button" class="secondary" style="float:right" id="monthlyExportCsvButton">Export CSV</button></h3>
+    
+                <p class="muted" id="monthlyReportRange"></p>
+                <article class="panel" id="monthlySalesPanel">
+
+            <div class="reports-demand" id="monthlyDemandItems"></div>
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Menu item</th>
+                    <th>Qty sold</th>
+                    <th>Sales</th>
+                    <th>Share</th>
+                    <th>Demand</th>
+                  </tr>
+                </thead>
+                <tbody id="monthlySalesRows"></tbody>
+              </table>
+            </div>
+          </article>
+  </div>
+
+  <div id="expenses" class="tab-content">
+    <h2>Expenses Report</h2>
+    <p>Analyze monthly and yearly expenses with breakdowns.</p>
+  </div>
+
+        
+      </main>
+    </div>
+    <script>
+  
+  </script>
+    <script src="/js/shared.js"></script>
+    <script src="/js/reports-sales.js"></script>
+    <script src="/js/reports.js"></script>
+    
+  </body>
+</html>

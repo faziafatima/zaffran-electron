@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="shortcut icon" href="../images/favicon.ico">
+  </head>
+  <body data-role="<%= role %>" data-user="<%= user %>">
+    <%- include('../partials/header.ejs') %>
+    <div class="app-shell">
+      <%- include('../partials/sidebar.ejs') %>
+      <main class="main-content">
+        <div class="topbar">
+                      
+        <div class="page-heading">Menu Management</div>
+           
+
+          <div class="topbar-actions">
+            <div class="user-chip" id="menuCount">Loading…</div>
+            <button class="secondary" type="button" id="openMenuFormButton">Add Items</button>
+            <a href="/masterPages" class="button">Back</a>
+          </div>
+        </div>
+        <section class="panel menu-panel">
+          <div class="section-head">
+            <div>
+              <h3>Menu Items</h3>
+            </div>
+            <div class="menu-toolbar">
+              <input id="menuSearchInput" class="menu-search" type="search" aria-label="Search menu items" />
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="table menu-table">
+              <thead>
+                <tr><th>#</th><th>Image</th><th>Dish</th><th>Category</th><th>Type</th><th>Price</th><th>Status</th><th>Actions</th></tr>
+              </thead>
+              <tbody id="menuTableBody"></tbody>
+            </table>
+          </div>
+          <div class="table-footer">
+            <span class="muted" id="menuPageSummary">Showing 0 of 0 items</span>
+            <div class="pagination-controls">
+              <button type="button" class="secondary pagination-button" id="menuPrevButton">Previous</button>
+              <span class="muted" id="menuPageIndicator">Page 0 of 0</span>
+              <button type="button" class="secondary pagination-button" id="menuNextButton">Next</button>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+    <div class="modal-backdrop" id="menuModalBackdrop" hidden></div>
+    <div class="modal-shell" id="menuModal" role="dialog" aria-modal="true" aria-labelledby="menuModalTitle" hidden>
+      <div class="modal-card panel">
+        <div class="section-head modal-head">
+          <div>
+            <h3 id="menuModalTitle">Add or edit dish</h3>
+            <span class="section-tag">Saved through the live menu API</span>
+          </div>
+          <button type="button" class="icon-button" id="closeMenuFormButton" aria-label="Close menu form">×</button>
+        </div>
+        <form id="menuForm">
+          <div  class="four-grid">
+          <div class="field"><label for="menuName">Name</label><input id="menuName" required /></div>
+          <div class="field"><label for="menuCategory">Category</label><select id="menuCategory" required><option>Main Course</option><option>Starter</option><option>Drinks</option><option>Breads</option><option>Raita</option><option>Rice</option><option>Sweets</option><option>Combo</option><option>Others</option></select></div>
+          <div class="field"><label for="menuType">Type</label><select id="menuType" required><option>Veg</option><option>Non-veg</option><option>Beverage</option><option>Others</option></select></div>
+          <div class="field"><label for="qtrPrice">Qtr Price</label><input id="qtrPrice" type="number" step="0.01" min="0" required /></div>
+          <div class="field"><label for="halfPrice">Half Price</label><input id="halfPrice" type="number" step="0.01" min="0" required /></div>
+          <div class="field"><label for="fullPrice">Full Price</label><input id="fullPrice" type="number" step="0.01" min="0" required /></div>
+          <div class="field"><label for="menuStatus">Status</label><select id="menuStatus" required><option>Available</option><option>Out of stock</option></select></div>
+          <div class="field"><label for="menuKitchenType">Kitchen Type</label><select id="menuKitchenType" required><option value="in-kitchen">In-kitchen</option><option value="out-kitchen">Out-kitchen</option></select></div>
+          <div class="field checkbox-field"><label for="menuIsFavourite"><input id="menuIsFavourite" type="checkbox" /> Mark as favourite</label></div>
+          <div class="field checkbox-field"><label for="menuOnMrp"><input id="menuOnMrp" type="checkbox" /> On MRP</label></div>
+          <div class="field"><label for="menuDescription">Description</label><input id="menuDescription" /></div>
+          </div>
+          
+          <div  class="double-grid">
+          <div class="field">
+            <label for="menuImage">Dish Image</label>
+            <input id="menuImage" type="file" accept="image/*" />
+          </div>
+          <div class="menu-image-editor" id="menuImageEditor" hidden>
+            <img id="menuImagePreview" class="menu-image-preview" alt="Dish preview" />
+            <div class="menu-image-meta">
+              <!-- <span class="muted" id="menuImageName">Selected image</span> -->
+              <button class="ghost-button" type="button" id="removeMenuImageButton">Remove image</button>
+            </div>
+          </div>
+          </div>
+          <div class="modal-actions">
+            <button class="secondary" type="submit">Save Dish</button>
+            <button class="ghost-button" type="button" id="cancelMenuFormButton">Cancel</button>
+          </div>
+          <p class="muted" id="menuSaveMessage"></p>
+        </form>
+      </div>
+    </div>
+    <script src="/js/shared.js"></script>
+    <script src="/js/menu.js"></script>
+  </body>
+</html>

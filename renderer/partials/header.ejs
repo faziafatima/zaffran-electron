@@ -1,0 +1,343 @@
+
+
+<style>
+  /* Header styling */
+.header {
+ display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #d9dbdd;
+    border-bottom: 2px solid #10182b;
+    /* color: #fff; */
+    padding: 10px 20px;
+    font-family: Arial, sans-serif;
+}
+
+/* Logo */
+.logo {
+    height: 30px;
+}
+
+/* User menu */
+.user-menu {
+  position: relative;
+  cursor: pointer;
+  padding: 0 20px;
+}
+
+.restaurant-menu {
+  position: relative;
+  cursor: pointer;
+  padding: 0 20px;
+}
+
+/* Username */
+#username {
+  font-weight: 500;
+}
+
+/* Dropdown */
+.dropdown {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  background-color: #fff;
+  color: #333;
+  list-style: none;
+  margin: 0;
+  padding: 0px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  min-width: 160px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.dropdown li {
+  padding: 8px 12px;
+  border-bottom: 1px solid #cac4c4;
+}
+
+.dropdown li:hover {
+  background-color: #f0f0f0;
+}
+
+.dropdown-item-button {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+
+.dropdown li.active-item {
+  background-color: #eceff2;
+  font-weight: 600;
+}
+
+.dropdown a {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+/* Hidden state */
+.hidden {
+  display: none;
+}
+
+
+/* --- THE CARET CSS --- */
+.dropdown-caret {
+  display: inline-block;
+  width: 8px;
+  height: 5px;
+  background-color: currentColor; /* Inherits #333 color automatically */
+  clip-path: polygon(0 0, 100% 0, 50% 100%); /* Sharp downward triangle */
+  transition: transform 0.2s ease; /* Enables smooth flipping animation */
+}
+
+/* Rotates the triangle upside down when the menu is visible */
+.dropdown-caret-rotate {        /* Or use this if you toggle .active on username */
+  transform: rotate(180deg);
+}
+
+</style>
+
+<%
+  const roleKey = String(role || 'admin').toLowerCase();
+  const activePath = (currentPath || '/').replace(/\/$/, '') || '/';
+  const isOrdersPath = activePath === '/orders' || activePath.startsWith('/orders/');
+  const isOpenOrdersPath = activePath === '/orders' || activePath === '/orders/open';
+  const isClosedOrdersPath = activePath === '/orders/closed';
+  const menuMap = {
+    'super admin': [
+      { label: 'Dashboard', path: '/dashboard', icon: '📊' },
+      { label: 'Master Pages', path: '/masterPages', icon: '🍽️' },
+      { label: 'Orders', path: '/orders', icon: '🧾' },
+      { label: 'Expenses', path: '/expenses', icon: '💸' },
+      { label: 'Attendance', path: '/attendance', icon: '🕒' },
+      { label: 'Reports', path: '/reportsView', icon: '📈' },
+      { label: 'Day Cash', path: '/day-cash', icon: '💵' }
+    ],
+    admin: [
+      { label: 'Dashboard', path: '/dashboard', icon: '📊' },
+      { label: 'Master Pages', path: '/masterPages', icon: '🍽️' },
+      { label: 'Orders', path: '/orders', icon: '🧾' },
+      { label: 'Expenses', path: '/expenses', icon: '💸' },
+      { label: 'Attendance', path: '/attendance', icon: '🕒' },
+      { label: 'Reports', path: '/reportsView', icon: '📈' },
+      { label: 'Day Cash', path: '/day-cash', icon: '💵' }
+    ],
+    manager: [
+      { label: 'Dashboard', path: '/dashboard', icon: '📊' },
+      { label: 'Master Pages', path: '/masterPages', icon: '🍽️' },
+      { label: 'Orders', path: '/orders', icon: '🧾' },
+      { label: 'Expenses', path: '/expenses', icon: '💸' },
+      { label: 'Attendance', path: '/attendance', icon: '🕒' },
+      { label: 'Reports', path: '/reportsView', icon: '📈' },
+      { label: 'Day Cash', path: '/day-cash', icon: '💵' }
+    ],
+    staff: [
+      { label: 'Dashboard', path: '/dashboard', icon: '📊' },
+      { label: 'Orders', path: '/orders', icon: '🧾' }
+    ]
+  };
+  const items = menuMap[roleKey] || menuMap.admin;
+%>
+
+<header class="header sticky-header" id="header">
+  
+  <div class="brand">
+          <div class=""><img src="/img/logo.png" alt="Logo" class="logo" /></div>
+          <div>
+            <h1><a href="/dashboard"><%= restaurant?.name || 'RestaurantOS' %></a></h1>
+          </div>
+  </div>
+  <% if(role == 'super admin' || role == 'Super Admin') { %>
+  <div class="restaurant-menu">
+    <span id="restaurant-select"><%= restaurant?.name || 'RestaurantOS' %> <span class="dropdown-caret" id="caret1"></span></span>
+    <ul id="dropdown1" class="dropdown hidden">
+      <% restaurantList.forEach(item => { %>
+        <% const itemId = String(item.id || ''); %>
+        <% const selectedId = String(restaurantId || ''); %>
+        <li class="restaurant-option <%= itemId === selectedId ? 'active-item' : '' %>" data-restaurant-id="<%= itemId %>" data-restaurant-name="<%= item.name || '' %>">
+          <button type="button" class="dropdown-item-button"><%= item.name %></button>
+        </li>
+        <% }) %>
+    </ul>
+  </div>
+  <% } %>
+  <div class="user-menu">
+    <span id="username"><%= user %> <span class="dropdown-caret" id="caret2"></span></span>
+    <ul id="dropdown2" class="dropdown hidden">
+      <% items.forEach(item => { %>
+        <li><a href="<%= item.path %>"><%= item.icon %> <%= item.label %></a></li>
+        <% }) %>
+      <li><a href="/logout">🚪 Logout</a></li>
+    </ul>
+  </div>
+</header>
+<input type="hidden" id="header-user-name" value="<%= user %>" class="d-none" />
+<input type="hidden" id="header-restaurant-id" value="<%= restaurantId || '' %>" class="d-none" />
+<input type="hidden" id="header-role" value="<%= role || '' %>" class="d-none" />
+<script>
+   const headerRestaurantId = document.getElementById('header-restaurant-id')?.value || '';
+   const roleHeader = document.getElementById('header-role')?.value || '';
+const dropdownConfigs = [
+  {
+    trigger: document.getElementById('restaurant-select'),
+    menu: document.getElementById('dropdown1'),
+    caret: document.getElementById('caret1')
+  },
+  {
+    trigger: document.getElementById('username'),
+    menu: document.getElementById('dropdown2'),
+    caret: document.getElementById('caret2')
+  }
+].filter(item => item.trigger && item.menu && item.caret);
+
+function closeAllDropdowns(exceptMenu = null) {
+  dropdownConfigs.forEach(item => {
+    if (exceptMenu && item.menu === exceptMenu) {
+      return;
+    }
+    item.menu.classList.add('hidden');
+    item.caret.classList.remove('dropdown-caret-rotate');
+  });
+}
+
+dropdownConfigs.forEach(item => {
+  item.trigger.addEventListener('click', event => {
+    event.stopPropagation();
+    const shouldOpen = item.menu.classList.contains('hidden');
+    closeAllDropdowns();
+    if (shouldOpen) {
+      item.menu.classList.remove('hidden');
+      item.caret.classList.add('dropdown-caret-rotate');
+    }
+  });
+
+  item.menu.addEventListener('click', event => {
+    event.stopPropagation();
+  });
+});
+
+document.addEventListener('click', () => {
+  closeAllDropdowns();
+});
+
+const restaurantOptions = document.querySelectorAll('#dropdown1 .restaurant-option');
+
+async function updateSessionRestaurant(restaurantId) {
+  console.log('Attempting to update session restaurant to:', restaurantId);
+  const response = await fetch('/session/restaurant', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ restaurantId })
+  });
+
+  if (!response.ok) {
+    const errorPayload = await response.json().catch(() => ({}));
+    throw new Error(errorPayload.message || 'Failed to update restaurant');
+  }
+
+  return response.json();
+}
+
+restaurantOptions.forEach(option => {
+  option.addEventListener('click', async event => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const selectedRestaurantId = option.dataset.restaurantId;
+    const currentRestaurantId = document.getElementById('header-restaurant-id')?.value || '';
+    if (!selectedRestaurantId || selectedRestaurantId === currentRestaurantId) {
+      closeAllDropdowns();
+      return;
+    }
+
+    try {
+      await updateSessionRestaurant(selectedRestaurantId);
+      window.location.reload();
+    } catch (error) {
+      console.error('Restaurant switch failed:', error);
+      alert('Unable to switch restaurant. Please try again.');
+    }
+  });
+});
+
+
+  const AUTH_STORAGE_KEYS = {
+    token: 'zaffran_token',
+    name: 'zaffran_user_name',
+    role: 'zaffran_user_role'
+  }
+
+  const isLoginPage = () => {
+    const pathname = window.location.pathname || ''
+    return pathname.includes('/login')
+  }
+
+  const redirectToLogin = () => {
+    const pathSegments = window.location.pathname.split('/').filter(Boolean)
+    const directoryDepth = pathSegments.length > 1 ? pathSegments.length - 1 : 0
+    const relativePrefix = directoryDepth === 0 ? '' : '../'.repeat(directoryDepth)
+    window.location.href = `${relativePrefix}logout`
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // const token = window.localStorage.getItem(AUTH_STORAGE_KEYS.token)
+
+    // if (!token) {
+    //   if (!isLoginPage()) {
+    //     redirectToLogin()
+    //   }
+    //   return
+    // }
+
+    // if (isLoginPage()) {
+    //   window.location.href = 'login'
+    //   return
+    // }
+
+    const userName = window.localStorage.getItem(AUTH_STORAGE_KEYS.name) || 'User'
+    const userNameEl = document.getElementById('header-user-name')
+    if (userNameEl) {
+      userNameEl.textContent = userName
+      userNameEl.classList.remove('d-none')
+    }
+
+    const logoutLink = document.getElementById('logout-link')
+    if (logoutLink) {
+      logoutLink.addEventListener('click', event => {
+        event.preventDefault()
+        window.localStorage.removeItem(AUTH_STORAGE_KEYS.token)
+        window.localStorage.removeItem(AUTH_STORAGE_KEYS.name)
+        window.localStorage.removeItem(AUTH_STORAGE_KEYS.role)
+        redirectToLogin()
+      })
+    }
+  })
+
+    window.__APP_CONTEXT__ = {
+        role: "<%= role %>",
+        user: "<%= user %>",
+        restaurant: "<%= restaurant || '' %>",
+        restaurantId: "<%= restaurantId || '' %>",
+        restaurantDetails: {
+          name: "<%= restaurant?.name || 'Zaffran' %>",
+          address: "<%= restaurant?.address || '' %>",
+          phoneNumber: "<%= restaurant?.phoneNumber || '' %>",
+          gstin: "<%= restaurant?.gstin || '' %>",
+          fssai: "<%= restaurant?.fssai || '' %>"
+        }
+      };
+
+      localStorage.setItem('restaurant_session', JSON.stringify(window.__APP_CONTEXT__.restaurantDetails || ''));
+</script>

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="shortcut icon" href="../images/favicon.ico">
+  </head>
+  <body data-role="<%= role %>" data-user="<%= user %>">
+    <%- include('../partials/header.ejs') %>
+    <div class="app-shell">
+      <%- include('../partials/sidebar.ejs') %>
+      <%
+        const roleKey = String(role || '').toLowerCase();
+
+  const menuMap = {
+    'super admin': [
+      { label: 'Sales Report', path: '/reportsView/sales', desc: 'View detailed sales performance' },
+      { label: 'Inventory Report', path: '/reportsView/inventory', desc: 'Track stock levels and usage' },
+      { label: 'Expense Report', path: '/reportsView/expense', desc: 'Monitor restaurant & staff expense records' },
+      { label: 'Profit & Loss', path: '/reportsView/pnl', desc: 'View profit and loss over time' },
+      { label: 'GST Report', path: '/reportsView/gst', desc: 'View GST reports' },
+      { label: 'Staff Attendance & Salary', path: '/reportsView/staff-attendance', desc: 'View staff attendance and salary reports' }
+    ],
+    admin: [
+      { label: 'Sales Report', path: '/reportsView/sales', desc: 'View detailed sales performance' },
+      { label: 'Inventory Report', path: '/reportsView/inventory', desc: 'Track stock levels and usage' },
+      { label: 'Expense Report', path: '/reportsView/expense', desc: 'Monitor restaurant & staff expense records' },
+      { label: 'Profit & Loss', path: '/reportsView/pnl', desc: 'View profit and loss over time' },
+      { label: 'GST Report', path: '/reportsView/gst', desc: 'View GST reports' },
+      { label: 'Staff Attendance & Salary', path: '/reportsView/staff-attendance', desc: 'View staff attendance and salary reports' }
+      
+    ],
+    manager: [
+      { label: 'Sales Report', path: '/reportsView/sales', desc: 'View detailed sales performance' },
+      { label: 'Inventory Report', path: '/reportsView/inventory', desc: 'Track stock levels and usage' }
+    ]
+  };
+  const items = menuMap[roleKey] || menuMap.admin;
+%>
+
+      <main class="main-content">
+        
+        <div class="page-heading">Available Reports</div>
+        <section class="reports-period-grid" id="reportsPeriodGrid">
+          
+            <div class="reports-container">
+
+               <% items.forEach(item => { %>
+                    <a href="<%= item.path %>" class="report-card">
+                      <div class="report-title"><%= item.label %></div>
+                      <div class="report-desc"><%= item.desc %></div>
+                    </a>
+              <% }) %>
+            </div>
+        </section>
+      </main>
+    </div>
+    <script>
+      window.__APP_CONTEXT__ = {
+        role: "<%= role %>",
+        user: "<%= user %>",
+        restaurant: "<%= restaurant || '' %>"
+      };
+    </script>
+    <script src="/js/shared.js"></script>
+    <script src="/js/reports.js"></script>
+  </body>
+</html>

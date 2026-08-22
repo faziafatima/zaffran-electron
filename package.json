@@ -1,0 +1,24 @@
+{
+  "name": "nodejs-desktop-app",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "package": "electron-packager . ElectronApp --platform=win32 --arch=x64 --out=dist --icon=resources/icon.png",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^43.4.1",
+    "electron-packager": "^17.1.2"
+  },
+  "dependencies": {
+    "axios": "^1.19.0",
+    "ejs": "^6.0.1",
+    "express": "^5.2.1",
+    "express-session": "^1.19.0"
+  }
+}

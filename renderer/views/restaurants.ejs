@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="shortcut icon" href="../images/favicon.ico">
+  </head>
+  <body data-role="<%= role %>" data-user="<%= user %>">
+    <%- include('../partials/header.ejs') %>
+    <div class="app-shell">
+      <%- include('../partials/sidebar.ejs') %>
+      <main class="main-content">
+        <div class="topbar">
+          
+          <div class="page-heading">Restaurant Management</div>
+          <div class="topbar-actions">
+            <button class="secondary" type="button" id="openRestaurantFormButton">Add Restaurant</button>
+            <a href="/masterPages" class="button">Back</a>
+          </div>
+        </div>
+        <section class="row">
+          <div class="panel col">
+            <h3>Restaurant Records</h3>
+            <table class="table">
+              <thead>
+                <tr><th>Name</th><th>Address</th><th>Phone</th><th>GSTIN</th><th>FSSAI</th><th>Tax Rate</th><th>Actions</th></tr>
+              </thead>
+              <tbody id="restaurantsTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div class="modal-backdrop" id="restaurantModalBackdrop" hidden></div>
+    <div class="modal-shell" id="restaurantModal" role="dialog" aria-modal="true" aria-labelledby="restaurantModalTitle" hidden>
+      <div class="modal-card panel">
+        <div class="section-head modal-head">
+          <div>
+            <h3 id="restaurantModalTitle">Add restaurant</h3>
+            <span class="section-tag">Create or update restaurant details</span>
+          </div>
+          <button type="button" class="icon-button" id="closeRestaurantFormButton" aria-label="Close restaurant form">×</button>
+        </div>
+        <form id="restaurantForm">
+          <div class="double-grid">
+          <div class="field"><label for="restaurantName">Name</label><input id="restaurantName" required /></div>
+          <div class="field"><label for="restaurantAddress">Address</label><input id="restaurantAddress" required /></div>
+          <div class="field"><label for="restaurantPhoneNumber">Phone Number</label><input id="restaurantPhoneNumber" required /></div>
+          <div class="field"><label for="restaurantGstin">GSTIN</label><input id="restaurantGstin" required /></div>
+          </div><div class="triple-grid">
+          <div class="field"><label for="restaurantFssai">FSSAI</label><input id="restaurantFssai" required /></div>
+          <div class="field"><label for="restaurantTaxRate">Tax Rate (%)</label><input id="restaurantTaxRate" type="number" step="0.01" min="0" max="100" value="5" required /></div>
+          <div class="field"><label for="restaurantPrefix">Order Prefix</label><input id="restaurantPrefix" required /></div>
+          </div>
+          <div class="modal-actions">
+            <button type="submit">Save Restaurant</button>
+            <button class="ghost-button" type="button" id="cancelRestaurantFormButton">Cancel</button>
+          </div>
+          <p class="muted" id="restaurantSaveMessage"></p>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      window.__APP_CONTEXT__ = {
+        role: "<%= role %>",
+        user: "<%= user %>",
+        restaurant: "<%= restaurant || '' %>"
+      };
+    </script>
+    <script src="/js/shared.js"></script>
+    <script src="/js/restaurants.js"></script>
+  </body>
+</html>

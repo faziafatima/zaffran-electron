@@ -1,0 +1,558 @@
+const orderCrudState = {
+  menuItems: [],
+  draftItems: []
+};
+
+function isCarOrderSelected() {
+  const orderType = String(document.getElementById('orderType')?.value || '').trim().toLowerCase();
+  return orderType === 'car';
+}
+
+function isTakeawayOrderSelected() {
+  const orderType = String(document.getElementById('orderType')?.value || '').trim().toLowerCase();
+  return orderType === 'takeaway';
+}
+
+function shouldCaptureCustomerDetails() {
+  return isCarOrderSelected() || isTakeawayOrderSelected();
+}
+
+function setCustomerLookupMessage(message, isError = false) {
+  const node = document.getElementById('orderCustomerLookupMessage');
+  if (!node) return;
+  node.textContent = message || '';
+  node.style.color = isError ? '#b91c1c' : '';
+}
+
+function normalizeCarNumber(value) {
+  return String(value || '').trim().toUpperCase();
+}
+
+function normalizePhoneNumber(value) {
+  return String(value || '').trim();
+}
+
+function setCarOrderFieldsVisibility() {
+  const shell = document.getElementById('carOrderFields');
+  const carField = document.getElementById('orderCarNumberField');
+  const carInput = document.getElementById('orderCarNumber');
+  const phoneInput = document.getElementById('orderCustomerPhone');
+  const nameInput = document.getElementById('orderCustomerName');
+
+  const visible = shouldCaptureCustomerDetails();
+  const showCarField = isCarOrderSelected();
+  if (shell) shell.hidden = !visible;
+  if (carField) {
+    carField.hidden = !showCarField;
+    carField.style.display = showCarField ? '' : 'none';
+  }
+
+  if (!carInput || !phoneInput || !nameInput) return;
+
+  carInput.required = showCarField;
+  // phoneInput.required = visible;
+  // nameInput.required = visible;
+
+  if (!showCarField) {
+    carInput.value = '';
+  }
+
+  if (!visible) {
+    const customerId = document.getElementById('orderCustomerId');
+    if (customerId) customerId.value = '';
+    setCustomerLookupMessage('');
+  }
+}
+
+function applyCustomerToForm(customer) {
+  const idInput = document.getElementById('orderCustomerId');
+  const nameInput = document.getElementById('orderCustomerName');
+  const phoneInput = document.getElementById('orderCustomerPhone');
+  const carInput = document.getElementById('orderCarNumber');
+
+  if (idInput) idInput.value = customer?.id ? String(customer.id) : '';
+  if (nameInput && customer?.name) nameInput.value = customer.name;
+  if (phoneInput && customer?.phone) phoneInput.value = customer.phone;
+  if (carInput && customer?.carNumber) carInput.value = customer.carNumber;
+}
+
+async function lookupCustomerByIdentifier() {
+  if (!shouldCaptureCustomerDetails()) return;
+
+  const phoneInput = document.getElementById('orderCustomerPhone');
+  const carInput = document.getElementById('orderCarNumber');
+  const idInput = document.getElementById('orderCustomerId');
+
+  const phone = normalizePhoneNumber(phoneInput?.value);
+  const carNumber = normalizeCarNumber(carInput?.value);
+
+  if (!phone && !carNumber) {
+    // if (idInput) idInput.value = '';
+    // setCustomerLookupMessage('');
+    return;
+  }
+
+  const params = new URLSearchParams();
+  if (phone) params.set('phone', phone);
+  if (carNumber) params.set('carNumber', carNumber);
+
+  try {
+    const response = await fetch(`/api/customers/search?${params.toString()}`);
+    if (response.status === 404) {
+      if (idInput) idInput.value = '';
+      setCustomerLookupMessage('No existing customer found. Enter details to create one.');
+      return;
+    }
+    if (!response.ok) {
+      throw new Error(`Customer search failed (${response.status}).`);
+    }
+
+    const customer = await response.json();
+    applyCustomerToForm(customer);
+    setCustomerLookupMessage('Customer details auto-filled from existing record.');
+  } catch (error) {
+    setCustomerLookupMessage(error.message || 'Customer lookup failed.', true);
+  }
+}
+
+async function resolveCustomerForCarOrder() {
+  if (!shouldCaptureCustomerDetails()) return 0;
+
+  const name = String(document.getElementById('orderCustomerName')?.value || '').trim();
+  const phone = normalizePhoneNumber(document.getElementById('orderCustomerPhone')?.value);
+  const carNumber = normalizeCarNumber(document.getElementById('orderCarNumber')?.value);
+
+  
+  if (isCarOrderSelected() && !carNumber) {
+    return;
+  }
+  
+  if (!name && !phone) {
+    return;
+  }
+
+  const response = await fetch('/api/customers/resolve', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, phone, carNumber: isCarOrderSelected() ? carNumber : '' })
+  });
+
+  if (!response.ok) {
+    let message = `Unable to save customer details (${response.status}).`;
+    try {
+      const data = await response.json();
+      if (data?.message) message = data.message;
+    } catch (_error) {
+      // Ignore JSON parsing errors and keep default message.
+    }
+    throw new Error(message);
+  }
+
+  const customer = await response.json();
+  applyCustomerToForm(customer);
+  setCustomerLookupMessage('Customer details saved.');
+  return Number(customer?.id || 0);
+}
+
+function normalizePortion(value) {
+  const portion = String(value || '').toLowerCase();
+  if (portion === 'qtr' || portion === 'half' || portion === 'full') return portion;
+  return 'full';
+}
+
+function getPortionLabel(portion) {
+  const normalized = normalizePortion(portion);
+  if (normalized === 'qtr') return 'Qtr';
+  if (normalized === 'half') return 'Half';
+  return 'Full';
+}
+
+function getMenuItemPriceByPortion(menuItem, portion) {
+  const normalized = normalizePortion(portion);
+
+  if (normalized === 'qtr') {
+    return Number(menuItem?.qtr_price ?? menuItem?.half_price ?? menuItem?.full_price ?? 0);
+  }
+
+  if (normalized === 'half') {
+    return Number(menuItem?.half_price ?? menuItem?.full_price ?? menuItem?.qtr_price ?? 0);
+  }
+
+  return Number(menuItem?.full_price ?? menuItem?.half_price ?? menuItem?.qtr_price ?? 0);
+}
+
+function getMenuItemById(menuItemId) {
+  return orderCrudState.menuItems.find(item => Number(item.id) === Number(menuItemId));
+}
+
+function getDishImageSrc(dish) {
+  if (dish?.imageBase64) {
+    const contentType = dish.imageContentType || 'image/jpeg';
+    return `data:${contentType};base64,${dish.imageBase64}`;
+  }
+  return '/img/no-image.png';
+}
+
+function sumOrderItems(items) {
+  return items.reduce((total, item) => total + (Number(item.price || 0) * Number(item.quantity || 0)), 0);
+}
+
+function renderOrderItems(items) {
+  if (!items.length) {
+    return '<div class="order-empty">Add dishes to build this order.</div>';
+  }
+
+  return items.map(item => `
+    <div class="order-item-row">
+      <div>
+        <strong>${item.quantity} x ${item.name}</strong>
+        <div class="muted">${getPortionLabel(item.portion)} • ${formatCurrency(item.price)} each</div>
+      </div>
+      <div class="order-item-row-actions">
+        <strong>${formatCurrency(item.price * item.quantity)}</strong>
+        <button
+          type="button"
+          class="menu-action-btn delete"
+          data-order-action="remove-draft-item"
+          data-menu-item-id="${item.menuItemId}"
+          data-portion="${item.portion}">
+          Remove
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function updateOrderTotals() {
+  const subtotal = sumOrderItems(orderCrudState.draftItems);
+
+  const amountInput = document.getElementById('orderAmount');
+  if (amountInput) amountInput.value = subtotal.toFixed(0);
+
+  const totalNode = document.getElementById('order-total');
+  if (totalNode) totalNode.textContent = subtotal.toFixed(0);
+}
+
+function renderDraftItems() {
+  const container = document.getElementById('orderDraftItems');
+  if (!container) return;
+
+  container.innerHTML = renderOrderItems(orderCrudState.draftItems);
+  updateOrderTotals();
+}
+
+function setDraftItems(items) {
+  orderCrudState.draftItems = Array.isArray(items) ? items : [];
+  renderDraftItems();
+}
+
+function addItemToDraft(menuItemId, quantity, portion) {
+  const menuItem = getMenuItemById(menuItemId);
+  if (!menuItem) return false;
+
+  const normalizedPortion = normalizePortion(portion);
+  const normalizedQuantity = Math.max(1, Number(quantity || 1));
+  const price = getMenuItemPriceByPortion(menuItem, normalizedPortion);
+
+  const nextItems = orderCrudState.draftItems.map(item => ({ ...item }));
+  const existing = nextItems.find(item => (
+    Number(item.menuItemId) === Number(menuItemId)
+      && normalizePortion(item.portion) === normalizedPortion
+  ));
+
+  if (existing) {
+    existing.quantity += normalizedQuantity;
+  } else {
+    nextItems.push({
+      menuItemId: Number(menuItem.id),
+      name: menuItem.name || `Dish #${menuItem.id}`,
+      quantity: normalizedQuantity,
+      portion: normalizedPortion,
+      price
+    });
+  }
+
+  setDraftItems(nextItems);
+  return true;
+}
+
+function removeItemFromDraft(menuItemId, portion) {
+  const normalizedPortion = normalizePortion(portion);
+  setDraftItems(orderCrudState.draftItems.filter(item => {
+    if (Number(item.menuItemId) !== Number(menuItemId)) return true;
+    return normalizePortion(item.portion) !== normalizedPortion;
+  }));
+}
+
+function buildOrderPayload(customerIdOverride = null) {
+  const subtotal = sumOrderItems(orderCrudState.draftItems);
+  const customerIdInput = Number(document.getElementById('orderCustomerId')?.value || 0);
+  const customerId = customerIdOverride !== null ? Number(customerIdOverride || 0) : customerIdInput;
+
+  return {
+    tableId: Number(document.getElementById('orderTableId')?.value || 0),
+    order_type: document.getElementById('orderType')?.value || 'Dine-in',
+    status: document.getElementById('orderStatus')?.value || 'Pending',
+    item_price: subtotal,
+    server_name: document.getElementById('serverName')?.value || '',
+    tax_percentage: 5,
+    discount_perc: 0,
+    discount_amount: 0,
+    isSplitBill: 0,
+    payment_mode: 'cash',
+    cash_payment: subtotal,
+    card_payment: 0,
+    upi_payment: 0,
+    createdByUserId: Number(document.getElementById('orderCreatedBy')?.value || 0),
+    customerId,
+    itemsPayload: orderCrudState.draftItems.map(item => ({
+      menuItemId: Number(item.menuItemId),
+      quantity: Number(item.quantity || 1),
+      price: Number(item.price || 0),
+      portion: normalizePortion(item.portion)
+    })),
+    items: orderCrudState.draftItems.map(item => ({
+      menuItemId: Number(item.menuItemId),
+      quantity: Number(item.quantity || 1),
+      price: Number(item.price || 0),
+      portion: normalizePortion(item.portion)
+    }))
+  };
+}
+
+function renderDishes(filter = '') {
+  const dishList = document.getElementById('dish-list');
+  if (!dishList) return;
+
+  const normalizedFilter = String(filter || '').trim().toLowerCase();
+  const items = orderCrudState.menuItems.filter(dish => {
+    if (!dish?.name) return false;
+    if (!normalizedFilter) return true;
+    return dish.name.toLowerCase().includes(normalizedFilter);
+  });
+
+  if (!items.length) {
+    dishList.innerHTML = '<div class="muted">No dishes found.</div>';
+    return;
+  }
+
+  const favouriteItems = items.filter(dish => Boolean(dish?.isFavourite));
+  const remainingItems = items.filter(dish => !dish?.isFavourite);
+
+  const groupedByCategory = remainingItems.reduce((acc, dish) => {
+    const category = String(dish?.category || 'Uncategorized').trim() || 'Uncategorized';
+    if (!acc.has(category)) {
+      acc.set(category, []);
+    }
+    acc.get(category).push(dish);
+    return acc;
+  }, new Map());
+
+  const renderDishCard = dish => {
+    const portions = [
+      { key: 'qtr', label: 'Qtr', price: dish.qtr_price },
+      { key: 'half', label: 'Half', price: dish.half_price },
+      { key: 'full', label: 'Full', price: dish.full_price }
+    ].filter(p => Number(p.price || 0) > 0);
+
+    const availablePortions = portions.length ? portions : [{ key: 'full', label: 'Full', price: 0 }];
+    const showLabels = availablePortions.length > 1;
+
+    const options = availablePortions.map(portion => (
+      `<option value="${portion.key}">${showLabels ? `${portion.label} - ` : ''}${formatCurrency(Number(portion.price || 0))}</option>`
+    )).join('');
+
+    return `
+      <div class="dish" data-dish-id="${dish.id}">
+        <img src="${getDishImageSrc(dish)}" alt="${dish.name || 'Dish'}" />
+        <h4>${dish.name || 'Unnamed dish'}</h4>
+        <div class="dish-details">
+          <select data-dish-portion="${dish.id}">
+            ${options}
+          </select>
+        </div>
+        <input type="number" data-dish-qty="${dish.id}" min="1" value="1" />
+        <div class="dish-actions">
+          <button type="button" class="add-dish-button" data-dish-add="${dish.id}">Add</button>
+        </div>
+      </div>
+    `;
+  };
+
+  const favouritesSection = favouriteItems.length ? `
+    <section class="dish-category-group dish-favourites-group">
+      <h3 class="dish-category-title">Favourites</h3>
+      ${favouriteItems.map(renderDishCard).join('')}
+    </section>
+  ` : '';
+
+  const categorySections = Array.from(groupedByCategory.entries()).map(([category, categoryItems]) => `
+    <section class="dish-category-group">
+      <h3 class="dish-category-title">${category}</h3>
+      ${categoryItems.map(renderDishCard).join('')}
+    </section>
+  `).join('');
+
+  dishList.innerHTML = favouritesSection + categorySections;
+}
+
+async function loadMenuItems() {
+  const response = await fetch(`/api/menu/active/${headerRestaurantId}`);
+  if (!response.ok) {
+    throw new Error(`Unable to load menu items (${response.status}).`);
+  }
+
+  const data = await response.json();
+  orderCrudState.menuItems = Array.isArray(data) ? data : [];
+  renderDishes();
+
+  const menuMessage = document.getElementById('orderMenuMessage');
+  if (menuMessage) {
+    menuMessage.textContent = orderCrudState.menuItems.length
+      ? ''
+      : 'No menu items found.';
+  }
+}
+
+function resetOrderForm() {
+  const form = document.getElementById('orderForm');
+  if (form) form.reset();
+
+  const customerId = document.getElementById('orderCustomerId');
+  const customerName = document.getElementById('orderCustomerName');
+  const customerPhone = document.getElementById('orderCustomerPhone');
+  const carNumber = document.getElementById('orderCarNumber');
+  if (customerId) customerId.value = '';
+  if (customerName) customerName.value = '';
+  if (customerPhone) customerPhone.value = '';
+  if (carNumber) carNumber.value = '';
+
+  setCustomerLookupMessage('');
+  setDraftItems([]);
+  setCarOrderFieldsVisibility();
+  showSaveMessage('orderSaveMessage', '');
+}
+
+function setupOrderPage() {
+  const dishList = document.getElementById('dish-list');
+  const searchInput = document.getElementById('search');
+  const draftItemsContainer = document.getElementById('orderDraftItems');
+  const cancelButton = document.getElementById('cancelOrderFormButton');
+  const form = document.getElementById('orderForm');
+  const orderType = document.getElementById('orderType');
+  const customerPhone = document.getElementById('orderCustomerPhone');
+  const carNumber = document.getElementById('orderCarNumber');
+
+  if (orderType) {
+    orderType.addEventListener('change', () => {
+      setCarOrderFieldsVisibility();
+    });
+  }
+
+  if (customerPhone) {
+    customerPhone.addEventListener('blur', () => {
+      lookupCustomerByIdentifier();
+    });
+  }
+
+  if (carNumber) {
+    carNumber.addEventListener('blur', () => {
+      const normalized = normalizeCarNumber(carNumber.value);
+      carNumber.value = normalized;
+      lookupCustomerByIdentifier();
+    });
+  }
+
+  if (searchInput) {
+    searchInput.addEventListener('input', event => {
+      renderDishes(event.target.value || '');
+    });
+  }
+
+  if (dishList) {
+    dishList.addEventListener('click', event => {
+      const addButton = event.target.closest('[data-dish-add]');
+      if (!addButton) return;
+
+      const dishId = Number(addButton.getAttribute('data-dish-add') || 0);
+      const portionSelect = document.querySelector(`[data-dish-portion="${dishId}"]`);
+      const qtyInput = document.querySelector(`[data-dish-qty="${dishId}"]`);
+
+      const portion = normalizePortion(portionSelect?.value);
+      const quantity = Math.max(1, Number(qtyInput?.value || 1));
+
+      const added = addItemToDraft(dishId, quantity, portion);
+      if (!added) {
+        showSaveMessage('orderSaveMessage', 'Unable to add this dish.', true);
+        return;
+      }
+
+    //   if (qtyInput) qtyInput.value = '1';
+    //   showSaveMessage('orderSaveMessage', `${getPortionLabel(portion)} portion added to draft order.`);
+    });
+  }
+
+  if (draftItemsContainer) {
+    draftItemsContainer.addEventListener('click', event => {
+      const removeButton = event.target.closest('[data-order-action="remove-draft-item"]');
+      if (!removeButton) return;
+
+      const menuItemId = Number(removeButton.getAttribute('data-menu-item-id') || 0);
+      const portion = removeButton.getAttribute('data-portion') || 'full';
+      removeItemFromDraft(menuItemId, portion);
+      // showSaveMessage('orderSaveMessage', 'Dish removed from draft order.');
+    });
+  }
+
+  if (cancelButton) {
+    cancelButton.addEventListener('click', () => {
+      resetOrderForm();
+    });
+  }
+
+  if (form) {
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+
+      if (!orderCrudState.draftItems.length) {
+        showSaveMessage('orderSaveMessage', 'Add at least one dish before creating the order.', true);
+        return;
+      }
+
+      try {
+        const resolvedCustomerId = await resolveCustomerForCarOrder();
+        const response = await fetch(`/api/orders/${headerRestaurantId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(buildOrderPayload(shouldCaptureCustomerDetails() ? resolvedCustomerId : null))
+        });
+
+        if (!response.ok) {
+          throw new Error(`Save failed with status ${response.status}`);
+        }
+
+        window.location.assign('/orders/open');
+      } catch (error) {
+        showSaveMessage('orderSaveMessage', error.message || 'Unable to create order.', true);
+      }
+    });
+  }
+}
+
+ 
+
+document.addEventListener('DOMContentLoaded', () => {
+  bindCommonChrome();
+
+  setupOrderPage();
+  setDraftItems([]);
+  setCarOrderFieldsVisibility();
+
+  loadMenuItems().catch(error => {
+    const dishList = document.getElementById('dish-list');
+    if (dishList) {
+      dishList.innerHTML = '<div class="muted">Unable to load dishes right now.</div>';
+    }
+    showSaveMessage('orderSaveMessage', error.message || 'Unable to load menu items.', true);
+  });
+});

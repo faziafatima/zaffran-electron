@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="shortcut icon" href="../images/favicon.ico">
+  </head>
+  <body data-role="<%= role %>" data-user="<%= user %>">
+    <%- include('../partials/header.ejs') %>
+    <div class="app-shell">
+      <%- include('../partials/sidebar.ejs') %>
+      <main class="main-content">
+        <div class="topbar">
+          <div class="page-heading">Customer Records</div>
+          <!-- <div><h2>Customer Records</h2><p>Track frequent guests and loyalty activity.</p></div> -->
+          <div class="topbar-actions">
+            <button class="secondary" type="button" id="openCustomerFormButton">Add Customer</button>
+            <a href="/masterPages" class="button">Back</a>
+          </div>
+        </div>
+        <section class="row">
+          <div class="panel col">
+           
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Phone</th>
+                  <th>Loyalty Points</th>
+                  <th>Orders</th>
+                  <th>Total Spent</th>
+                  <th>Preferences</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="customersTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div class="modal-backdrop" id="customerModalBackdrop" hidden></div>
+    <div class="modal-shell" id="customerModal" role="dialog" aria-modal="true" aria-labelledby="customerModalTitle" hidden>
+      <div class="modal-card panel">
+        <div class="section-head modal-head">
+          <div>
+            <h3 id="customerModalTitle">Add customer</h3>
+            <span class="section-tag">Create or update customer profile</span>
+          </div>
+          <button type="button" class="icon-button" id="closeCustomerFormButton" aria-label="Close customer form">x</button>
+        </div>
+        <form id="customerForm">
+          <div class="triple-grid">
+          <div class="field"><label for="customerName">Customer name</label><input id="customerName" required /></div>
+          <div class="field"><label for="customerPhone">Phone</label><input id="customerPhone" required /></div>
+          <div class="field"><label for="customerLoyaltyPoints">Loyalty points</label><input id="customerLoyaltyPoints" type="number" min="0" step="1" /></div>
+          <div class="field"><label for="customerPreferences">Preferences</label><input id="customerPreferences" /></div>
+          </div>
+          <div class="modal-actions">
+            <button type="submit">Save Customer</button>
+            <button class="ghost-button" type="button" id="cancelCustomerFormButton">Cancel</button>
+          </div>
+          <p class="muted" id="customerSaveMessage"></p>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      window.__APP_CONTEXT__ = {
+        role: "<%= role %>",
+        user: "<%= user %>",
+        restaurant: "<%= restaurant || '' %>"
+      };
+    </script>
+    <script src="/js/shared.js"></script>
+    <script src="/js/customers.js"></script>
+  </body>
+</html>

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="shortcut icon" href="../images/favicon.ico">
+  </head>
+  
+<%
+  const roleKey = String(role || 'admin').toLowerCase();
+  const activePath = (currentPath || '/').replace(/\/$/, '') || '/';
+  const isOrdersPath = activePath === '/orders' || activePath.startsWith('/orders/');
+  const isOpenOrdersPath = activePath === '/orders' || activePath === '/orders/open';
+  const isClosedOrdersPath = activePath === '/orders/closed';
+  const menuMap = {
+    'super admin': [
+      { label: 'Menu Management', path: '/menu', desc: 'Manage restaurant menu items' },
+      { label: 'Inventory Management', path: '/inventory', desc: 'Manage restaurant inventory' },
+      { label: 'Staff Management', path: '/staff', desc: 'Manage restaurant staff' },
+      { label: 'Roles', path: '/roles', desc: 'Add/Update roles' },
+      { label: 'Users', path: '/users', desc: 'Manage restaurant users' },
+      { label: 'Restaurants', path: '/restaurants', desc: 'Manage restaurant details' },
+      { label: 'Discounts', path: '/discounts', desc: 'Manage restaurant discounts' },
+      { label: 'Customers', path: '/customers', desc: 'Manage restaurant customers' }
+    ],
+    admin: [
+      { label: 'Menu Management', path: '/menu', desc: 'Manage restaurant menu items' },
+      { label: 'Inventory Management', path: '/inventory', desc: 'Manage restaurant inventory' },
+      { label: 'Staff Management', path: '/staff', desc: 'Manage restaurant staff' },
+      { label: 'Discounts', path: '/discounts', desc: 'Manage restaurant discounts' },
+      { label: 'Customers', path: '/customers', desc: 'Manage restaurant customers' }
+    ],
+    manager: [
+      { label: 'Menu Management', path: '/menu', desc: 'Manage restaurant menu items' },
+      { label: 'Inventory Management', path: '/inventory', desc: 'Manage restaurant inventory' }
+    ]
+  };
+  const items = menuMap[roleKey] || menuMap.admin;
+%>
+  <body data-role="<%= role %>" data-user="<%= user %>">
+    <%- include('../partials/header.ejs') %>
+    <div class="app-shell">
+      <%- include('../partials/sidebar.ejs') %>
+      
+      <main class="main-content">
+        
+        <div class="page-heading">Master Data Management</div>
+        <section class="reports-period-grid" style="display: block;" id="reportsPeriodGrid">
+          
+            <div class="reports-container">
+
+        <% items.forEach(item => { %>
+              <a href="<%= item.path %>" class="report-card">
+                <div class="report-title"><%= item.label %></div>
+                <div class="report-desc"><%= item.desc %></div>
+              </a>
+        <% }) %>
+            </div>
+        </section>
+      </main>
+    </div>
+    <script>
+      window.__APP_CONTEXT__ = {
+        role: "<%= role %>",
+        user: "<%= user %>",
+        restaurant: "<%= restaurant || '' %>"
+      };
+    </script>
+    <script src="/js/shared.js"></script>
+  </body>
+</html>

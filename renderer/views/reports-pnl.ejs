@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="shortcut icon" href="../images/favicon.ico">
+  </head>
+  <body data-role="<%= role %>" data-user="<%= user %>">
+    <%- include('../partials/header.ejs') %>
+    <div class="app-shell">
+      <%- include('../partials/sidebar.ejs') %>
+      <main class="main-content">
+        <section class="panel reports-filter-panel">
+          <div class="page-heading">Profit & Loss Report</div>
+
+          <div class="reports-filter-grid">
+            <div class="field">
+              <label for="reportReferenceDate">Reference date</label>
+              <input id="reportReferenceDateFrom" type="date" />
+              <input id="reportReferenceDateTo" type="date" />
+            </div>
+            <div class="reports-filter-actions">
+              <button type="button" id="refreshReportButton">Search</button>
+              <button type="button" class="secondary" id="pnlExportCsvButton">Export CSV</button>
+              <a href="/reportsView" class="button">Back</a>
+            </div>
+          </div>
+          <p class="muted" id="reportsMessage"></p>
+        </section>
+
+  
+        <section class="reports-period-grid" id="reportsPeriodGrid">
+          <article class="panel" id="pnlSalesPanel">
+            
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Month</th>
+                    <th>Sales</th>
+                    <th>Expenses</th>
+                    <th>NetProfit</th>
+                  </tr>
+                </thead>
+                <tbody id="pnlSalesRows"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+      </main>
+    </div>
+    <script src="/js/shared.js"></script>
+    <script src="/js/reports-pnl.js"></script>
+  </body>
+</html>

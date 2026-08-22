@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>The Zaffran - Grill & Curries</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="shortcut icon" href="../images/favicon.ico">
+  </head>
+  <body data-role="<%= role %>" data-user="<%= user %>" style="height: 100vh; ">
+    
+<div class="center" ><img src="/img/logo.png" alt="Logo" class="logo-login" /></div>
+
+        <div class="page-heading">Login</div>
+    <div class="auth-card">
+      <form id="loginForm">
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" type="email" required />
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input id="password" type="password" required />
+        </div>
+        <button type="submit">Sign In</button>
+        <p class="muted" id="loginMessage"><%= loginError || '' %></p>
+      </form>
+    </div>
+    <script>
+      window.__APP_CONTEXT__ = {
+        role: "<%= role %>",
+        user: "<%= user %>",
+        restaurant: "<%= restaurant || '' %>"
+      };
+    </script>
+    <script src="/js/login.js"></script>
+  </body>
+</html>

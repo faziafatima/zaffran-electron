@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="shortcut icon" href="../images/favicon.ico">
+  </head>
+  <body data-role="<%= role %>" data-user="<%= user %>">
+   <%- include('../partials/header.ejs') %>
+    <div class="app-shell">
+      <%- include('../partials/sidebar.ejs') %>
+      <main class="main-content">
+        <div class="topbar">
+          <div class="page-heading">Attendance Management</div>
+        </div>
+        <div class="panel col ">
+            <h3>Record attendance</h3>
+            <form id="attendanceForm">
+              <div class="attendance-quick-row">
+                <button class="ghost-button" type="button" id="attendanceCheckInNow">Check-in now</button>
+                <button class="ghost-button" type="button" id="attendanceCheckOutNow">Check-out now</button>
+              </div>
+              <div class="row-grid-attendance">
+              <div class="field">
+                <label for="attendanceStaffId">Staff member</label>
+                <select id="attendanceStaffId" required></select>
+              </div>
+              <div class="field"><label for="attendanceDate">Date</label><input id="attendanceDate" type="date" min="<%= minDate %>" required /></div>
+              <div class="field" id="attendanceCheckInField"><label for="attendanceCheckIn">Check-in</label><input id="attendanceCheckIn" type="time" required /></div>
+              <div class="field" id="attendanceCheckOutField"><label for="attendanceCheckOut">Check-out</label><input id="attendanceCheckOut" type="time" required /></div>
+              <div class="field">
+                <label for="attendanceStatus">Status</label>
+                <select id="attendanceStatus">
+                  <option>Present</option>
+                  <option>Absent</option>
+                  <option>Leave</option>
+                </select>
+              </div>
+              <div class="field" id="attendanceRemarksField" hidden>
+                <label for="attendanceRemarks">Remarks</label>
+                <textarea id="attendanceRemarks" rows="2" maxlength="300" placeholder="Required for Absent/Leave. Example: Sick leave, emergency, etc."></textarea>
+              </div>
+              
+            </div>
+            <button class="secondary" type="submit">Save attendance</button>
+              <p class="muted" id="attendanceSaveMessage"></p>
+            </form>
+          </div>
+        <section class="row">
+          
+          <div class="panel col">
+            <div class="section-head"><h3>Weekly attendance</h3><span class="section-tag">Live summary</span></div>
+            <div class="attendance-legend">
+              <span><i class="legend-dot present"></i>Present</span>
+              <span><i class="legend-dot absent"></i>Absent</span>
+              <span><i class="legend-dot leave"></i>Leave</span>
+            </div>
+            <div id="attendanceWeekGraph" class="attendance-week-graph"></div>
+            <div id="attendanceList" class="list"></div>
+          </div>
+          <!-- <div class="panel col">
+            <div class="section-head"><h3>Staff expenses</h3><span class="section-tag">Record cash/advance taken</span></div>
+            <form id="staffExpenseForm">
+              <div class="field">
+                <label for="staffExpenseStaffId">Staff member</label>
+                <select id="staffExpenseStaffId" required></select>
+              </div>
+              <div class="field"><label for="staffExpenseDate">Date</label><input id="staffExpenseDate" type="date" required /></div>
+              <div class="field"><label for="staffExpenseAmount">Expense amount</label><input id="staffExpenseAmount" type="number" min="0" step="0.01" value="0" required /></div>
+              <div class="field"><label for="staffExpenseDetails">Details</label><textarea id="staffExpenseDetails" rows="2" maxlength="300" placeholder="Reason for expense" required></textarea></div>
+              <button class="secondary" type="submit">Save expense</button>
+              <p class="muted" id="staffExpenseSaveMessage"></p>
+            </form>
+            <div id="staffExpenseList" class="list"></div>
+          </div> -->
+        </section>
+      </main>
+    </div>
+    <script>
+      window.__APP_CONTEXT__ = {
+        role: "<%= role %>",
+        user: "<%= user %>",
+        restaurant: "<%= restaurant || '' %>"
+      };
+    </script>
+    <script src="/js/shared.js"></script>
+    <script src="/js/attendance.js"></script>
+  </body>
+</html>

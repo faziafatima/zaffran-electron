@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="shortcut icon" href="../images/favicon.ico">
+  </head>
+  <body data-role="<%= role %>" data-user="<%= user %>">
+    <%- include('../partials/header.ejs') %>
+    <div class="app-shell">
+      <%- include('../partials/sidebar.ejs') %>
+      <main class="main-content">
+        <div class="topbar">
+          
+          <div class="page-heading">Role Management</div>
+          <div class="topbar-actions">
+            <button class="secondary" type="button" id="openRoleFormButton">Add Role</button>
+            <a href="/masterPages" class="button">Back</a>
+          </div>
+        </div>
+        <section class="row">
+          <div class="panel col">
+            <h3>Role Records</h3>
+            <table class="table">
+              <thead>
+                <tr><th>Role</th><th>Description</th><th>Actions</th></tr>
+              </thead>
+              <tbody id="rolesTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div class="modal-backdrop" id="roleModalBackdrop" hidden></div>
+    <div class="modal-shell" id="roleModal" role="dialog" aria-modal="true" aria-labelledby="roleModalTitle" hidden>
+      <div class="modal-card panel">
+        <div class="section-head modal-head">
+          <div>
+            <h3 id="roleModalTitle">Add role</h3>
+          </div>
+          <button type="button" class="icon-button" id="closeRoleFormButton" aria-label="Close role form">×</button>
+        </div>
+        <form id="roleForm">
+          <div class="double-grid">
+          <div class="field"><label for="roleName">Role name</label><input id="roleName" required /></div>
+          <div class="field"><label for="roleDescription">Description</label><input id="roleDescription" /></div>
+          </div>
+          <div class="modal-actions">
+            <button type="submit">Save Role</button>
+            <button class="ghost-button" type="button" id="cancelRoleFormButton">Cancel</button>
+          </div>
+          <p class="muted" id="roleSaveMessage"></p>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      window.__APP_CONTEXT__ = {
+        role: "<%= role %>",
+        user: "<%= user %>",
+        restaurant: "<%= restaurant || '' %>"
+      };
+    </script>
+    <script src="/js/shared.js"></script>
+    <script src="/js/roles.js"></script>
+  </body>
+</html>

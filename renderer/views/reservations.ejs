@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6/index.global.min.js"></script>
+    <link rel="shortcut icon" href="../images/favicon.ico">
+  </head>
+  <body data-role="<%= role %>" data-user="<%= user %>">
+    <%- include('../partials/header.ejs') %>
+    <div class="app-shell">
+      <%- include('../partials/sidebar.ejs') %>
+      <main class="main-content">
+        <div class="topbar">
+          <div><h2>Reservation System</h2><p>Book tables and keep dining plans in sync.</p></div>
+          <div class="user-chip" id="reservationCount">Loading…</div>
+        </div>
+        <section class="row">
+          <div class="panel col">
+            <h3>New reservation</h3>
+            <form id="reservationForm">
+              <div class="field"><label for="reservationCustomer">Customer</label><input id="reservationCustomer" required /></div>
+              <div class="field"><label for="reservationPhone">Phone</label><input id="reservationPhone" required /></div>
+              <div class="field"><label for="reservationDate">Date</label><input id="reservationDate" type="date" required /></div>
+              <div class="field"><label for="reservationTime">Time</label><input id="reservationTime" type="time" required /></div>
+              <div class="field"><label for="reservationTable">Table</label><select id="reservationTable"><option value="2">Table 2</option><option value="4">Table 4</option><option value="6">Table 6</option></select></div>
+              <div class="field"><label for="reservationPartySize">Party size</label><input id="reservationPartySize" type="number" min="1" value="2" required /></div>
+              <button type="submit">Book Table</button>
+              <p class="muted" id="reservationSaveMessage"></p>
+            </form>
+          </div>
+          <div class="panel col">
+            <div class="section-head"><h3>Upcoming bookings</h3><span class="section-tag">Live from backend</span></div>
+            <div id="reservationList" class="list"></div>
+            <div id="calendar" style="margin-top: 12px;"></div>
+          </div>
+        </section>
+      </main>
+    </div>
+    <script>
+      window.__APP_CONTEXT__ = {
+        role: "<%= role %>",
+        user: "<%= user %>",
+        restaurant: "<%= restaurant || '' %>"
+      };
+    </script>
+    <script src="/js/shared.js"></script>
+    <script src="/js/reservations.js"></script>
+  </body>
+</html>

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="shortcut icon" href="../images/favicon.ico">
+  </head>
+  <body data-role="<%= role %>" data-user="<%= user %>">
+    <%- include('../partials/header.ejs') %>
+    <div class="app-shell">
+      <%- include('../partials/sidebar.ejs') %>
+      <main class="main-content">
+        <div class="page-heading">Staff Attendance & Salary Report</div>
+        <section class="panel reports-filter-panel">
+          <div class="reports-filter-grid">
+            <div class="field">
+              <label for="reportReferenceDateFrom">Reference date</label>
+              <input id="reportReferenceDateFrom" type="date" />
+              <input id="reportReferenceDateTo" type="date" />
+            </div>
+            <div class="reports-filter-actions">
+              <button type="button" id="refreshReportButton">Search</button>
+              <button type="button" class="secondary" id="staffAttendanceExportCsvButton">Export CSV</button>
+              <a href="/reportsView" class="button">Back</a>
+            </div>
+          </div>
+          <p class="muted" id="reportsMessage"></p>
+        </section>
+
+        <section class="grid cards reports-summary-cards" id="staffAttendanceSummaryCards"></section>
+
+        <article class="panel">
+          <div class="section-head">
+            <div>
+              <h3>Staff Attendance & Salary</h3>
+              <p class="muted" id="staffAttendanceReportRange"></p>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Staff Name</th>
+                  <th>Role</th>
+                  <th>Present</th>
+                  <th>Absent</th>
+                  <th>Leave</th>
+                  <th>Unmarked</th>
+                  <th>Monthly Salary</th>
+                  <th>Per Day Salary</th>
+                  <th>Payable Salary</th>
+                </tr>
+              </thead>
+              <tbody id="staffAttendanceRows"></tbody>
+            </table>
+          </div>
+        </article>
+      </main>
+    </div>
+    <script src="/js/shared.js"></script>
+    <script src="/js/reports-staff-attendance.js"></script>
+  </body>
+</html>

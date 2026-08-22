@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="shortcut icon" href="../images/favicon.ico">
+  </head>
+  <body data-role="<%= role %>" data-user="<%= user %>">
+    <%- include('../partials/header.ejs') %>
+    <div class="app-shell">
+      <%- include('../partials/sidebar.ejs') %>
+      <main class="main-content">
+        <div class="topbar">
+          <div class="page-heading">Discount Management</div>
+          <div class="topbar-actions">
+            <button class="secondary" type="button" id="openDiscountFormButton">Add Discount</button>
+            <a href="/masterPages" class="button">Back</a>
+          </div>
+        </div>
+        <section class="row">
+          <div class="panel col">
+            <h3>Discount Records</h3>
+            <table class="table">
+              <thead>
+                <tr><th>Name</th><th>Description</th><th>Percent</th><th>Start</th><th>End</th><th>Actions</th></tr>
+              </thead>
+              <tbody id="discountsTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div class="modal-backdrop" id="discountModalBackdrop" hidden></div>
+    <div class="modal-shell" id="discountModal" role="dialog" aria-modal="true" aria-labelledby="discountModalTitle" hidden>
+      <div class="modal-card panel">
+        <div class="section-head modal-head">
+          <div>
+            <h3 id="discountModalTitle">Add discount</h3>
+          </div>
+          <button type="button" class="icon-button" id="closeDiscountFormButton" aria-label="Close discount form">x</button>
+        </div>
+        <form id="discountForm">
+          <div class="triple-grid">
+          <div class="field"><label for="discountName">Discount name</label><input id="discountName" required /></div>
+          <div class="field"><label for="discountDesc">Description</label><input id="discountDesc" /></div>
+          <div class="field"><label for="discountPerc">Discount percent</label><input id="discountPerc" type="number" min="0" max="100" step="0.01" required /></div>
+          <div class="field"><label for="discountStartDate">Start date</label><input id="discountStartDate" type="datetime-local" required/></div>
+          <div class="field"><label for="discountEndDate">End date</label><input id="discountEndDate" type="datetime-local" required/></div>
+          </div>
+          <div class="modal-actions">
+            <button type="submit">Save Discount</button>
+            <button class="ghost-button" type="button" id="cancelDiscountFormButton">Cancel</button>
+          </div>
+          <p class="muted" id="discountSaveMessage"></p>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      window.__APP_CONTEXT__ = {
+        role: "<%= role %>",
+        user: "<%= user %>",
+        restaurant: "<%= restaurant || '' %>"
+      };
+    </script>
+    <script src="/js/shared.js"></script>
+    <script src="/js/discounts.js"></script>
+  </body>
+</html>

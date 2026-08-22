@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="shortcut icon" href="../images/favicon.ico">
+  </head>
+  <body data-role="<%= role %>" data-user="<%= user %>">
+    <%- include('../partials/header.ejs') %>
+    <div class="app-shell">
+      <%- include('../partials/sidebar.ejs') %>
+      <main class="main-content">
+        <div class="topbar orders-topbar">
+          <div>&nbsp;</div>
+          <div class="page-heading">Closed Orders</div>
+          <div class="topbar-actions">
+            <a href="/orders/open" class="button">Back</a>
+          </div>
+        </div>
+
+        <section class="panel orders-panel">
+          <div class="section-head">
+            <div>
+              <h3>Closed Orders</h3>
+            </div>
+            <div class="menu-toolbar">
+              <input id="closedOrdersSearchInput" class="menu-search" type="search" aria-label="Search closed orders" placeholder="Search by order #, table, customer, status or payment" />
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="table closed-orders-table">
+              <thead>
+                <tr>
+                  <th>Order #</th>
+                  <th>Table</th>
+                  <th>Customer</th>
+                  <th>Status</th>
+                  <th>Payment</th>
+                  <th>Total</th>
+                  <th>Closed at</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="closedOrdersTableBody">
+                <tr><td colspan="8" class="empty-state">Loading closed orders...</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="table-footer">
+            <span class="muted" id="closedOrdersPageSummary">Showing 0 of 0 orders</span>
+            <div class="pagination-controls">
+              <button type="button" class="secondary pagination-button" id="closedOrdersPrevButton">Previous</button>
+              <span class="muted" id="closedOrdersPageIndicator">Page 0 of 0</span>
+              <button type="button" class="secondary pagination-button" id="closedOrdersNextButton">Next</button>
+            </div>
+          </div>
+          <p class="muted" id="closedOrdersMessage"></p>
+        </section>
+      </main>
+    </div>
+
+    <div class="modal-backdrop" id="closedOrderDetailsBackdrop" hidden></div>
+    <div class="modal-shell" id="closedOrderDetailsModal" role="dialog" aria-modal="true" aria-labelledby="closedOrderDetailsTitle" hidden>
+      <div class="modal-card modal-wide panel">
+        <div class="section-head modal-head">
+          <div>
+            <h3 id="closedOrderDetailsTitle">Closed order details</h3>
+            <span class="section-tag">View the finalized order record</span>
+          </div>
+          <button type="button" class="icon-button" id="closeClosedOrderDetailsButton" aria-label="Close closed order details">×</button>
+        </div>
+        <div id="closedOrderDetailsContent">
+          <div class="empty-state">Select an order to inspect its details.</div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      window.__APP_CONTEXT__ = {
+        role: "<%= role %>",
+        user: "<%= user %>",
+        restaurant: "<%= restaurant || '' %>"
+      };
+    </script>
+    <script src="/js/shared.js"></script>
+    <script src="/js/closed-orders.js"></script>
+  </body>
+</html>
