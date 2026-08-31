@@ -1922,10 +1922,7 @@ function setupOrderCrud() {
       try {
         printKot(order.id);
         markKotItemsAsPrinted(order.id, selectedItems);
-        const selection = document.getElementById('kotItemSelection');
-        if (selection) selection.innerHTML = '';
-        updateKotPreviewContent(order);
-        showSaveMessage('kotPrintMessage', 'Browser print dialog opened. Select the required printer there.');
+        closeKotPreviewModal();
       } catch (error) {
         showSaveMessage('kotPrintMessage', error.message, true);
       }
