@@ -398,7 +398,7 @@ a {
 .orders-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 45px 12px;
+  gap: 75px 12px;
   align-items: start;
 }
 

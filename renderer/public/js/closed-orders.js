@@ -183,6 +183,7 @@ function renderClosedOrderDetails(order) {
 function openClosedOrderDetails(order) {
   closedOrdersState.selectedOrder = order;
   renderClosedOrderDetails(order);
+  showSaveMessage('closedOrderPrintMessage', '');
   toggleModal('closedOrderDetailsModal', 'closedOrderDetailsBackdrop', true);
 }
 
@@ -192,7 +193,90 @@ function closeClosedOrderDetails() {
   if (content) {
     content.innerHTML = '<div class="empty-state">Select an order to inspect its details.</div>';
   }
+  showSaveMessage('closedOrderPrintMessage', '');
   toggleModal('closedOrderDetailsModal', 'closedOrderDetailsBackdrop', false);
+}
+
+function getClosedOrderPortionLabel(portion) {
+  const normalized = String(portion || 'full').toLowerCase();
+  if (normalized === 'qtr') return 'Qtr';
+  if (normalized === 'half') return 'Half';
+  return 'Full';
+}
+
+function printClosedOrderReceipt(order) {
+  if (!order) return;
+
+  if (!window.electronAPI || typeof window.electronAPI.printReceipt !== 'function') {
+    console.error('electronAPI.printReceipt is not available in renderer');
+    showSaveMessage('closedOrderPrintMessage', 'Printer bridge is not available. Please restart the app.', true);
+    return;
+  }
+
+  const restaurant = JSON.parse(localStorage.getItem('restaurant_session') || '{}');
+  const items = getClosedOrderItems(order);
+  const subtotal = Number(order.item_price || 0);
+  const taxPercentage = Number(order.tax_percentage || 0);
+  const taxAmount = Number(order.tax_amount || 0);
+  const discountAmount = Number(order.discount_amount || 0);
+  const discountPerc = Number(order.discount_perc || 0);
+  const onSpotDiscount = Number(order.on_spot_discount || 0);
+  const totalPayable = Number(order.total_payable_amount || 0);
+
+  const receipt = [
+    { type: 'raw', format: 'command', data: ESC_INIT },
+    { type: 'raw', format: 'command', data: ALIGN_CENTER },
+    { type: 'raw', format: 'image', flavor: 'file', data: '/img/logo-bw-small.png' },
+    { type: 'raw', format: 'command', data: BOLD_ON },
+    { type: 'raw', format: 'command', data: restaurant.name + "\n" },
+    { type: 'raw', format: 'command', data: restaurant.address + "\n" },
+    { type: 'raw', format: 'command', data: "Phone - " + restaurant.phoneNumber + "\n" },
+    { type: 'raw', format: 'command', data: "GSTIN - " + restaurant.gstin + "\n" },
+    { type: 'raw', format: 'command', data: "FSSAI - " + restaurant.fssai + "\n" },
+    { type: 'raw', format: 'command', data: "Tax Invoice (Reprint)\n" },
+    { type: 'raw', format: 'command', data: getFormattedCurrentDateTime() + "\n" },
+    { type: 'raw', format: 'command', data: BOLD_OFF },
+    { type: 'raw', format: 'command', data: "Order No: " + (order.strOrderId || order.id) + "\n" },
+    { type: 'raw', format: 'command', data: "Customer: " + (order.customer?.name || 'Walk-in guest') + "\n" },
+    { type: 'raw', format: 'command', data: "--------------------------------\n" },
+    { type: 'raw', format: 'command', data: ALIGN_LEFT },
+    { type: 'raw', format: 'command', data: "Item                Qty      price   Amount(Rs.)\n" },
+    { type: 'raw', format: 'command', data: "-----------------------------------------------\n" },
+  ];
+
+  items.forEach(it => {
+    receipt.push({
+      type: 'raw',
+      format: 'command',
+      data: formatRowInvoice(it.name || `Item #${it.menuItemId || '-'}`, it.quantity, getClosedOrderPortionLabel(it.portion), formatCurrency(it.price), formatCurrency(Number(it.price || 0) * Number(it.quantity || 0))) + "\n"
+    });
+  });
+
+  receipt.push({ type: 'raw', format: 'command', data: "-----------------------------------------------\n" });
+  receipt.push({ type: 'raw', format: 'command', data: formatTotals("Subtotal", formatCurrency(subtotal)) + "\n" });
+  receipt.push({ type: 'raw', format: 'command', data: formatTotals("Tax (" + taxPercentage.toFixed(0) + "%)", formatCurrency(taxAmount)) + "\n" });
+
+  if (discountAmount > 0) {
+    const discountName = `Discount${discountPerc ? ` (${discountPerc.toFixed(0)}%)` : ''}`;
+    receipt.push({ type: 'raw', format: 'command', data: formatTotals(discountName, `- ${formatCurrency(discountAmount)}`) + "\n" });
+  }
+
+  if (onSpotDiscount > 0) {
+    receipt.push({ type: 'raw', format: 'command', data: formatTotals("On Spot Discount", `- ${formatCurrency(onSpotDiscount)}`) + "\n" });
+  }
+
+  receipt.push({ type: 'raw', format: 'command', data: "===============================================\n" });
+  receipt.push({ type: 'raw', format: 'command', data: BOLD_ON });
+  receipt.push({ type: 'raw', format: 'command', data: formatTotals("Total Payable", formatCurrency(totalPayable)) + "\n" });
+  receipt.push({ type: 'raw', format: 'command', data: BOLD_OFF });
+  receipt.push({ type: 'raw', format: 'command', data: "===============================================\n" });
+
+  receipt.push({ type: 'raw', format: 'command', data: ALIGN_CENTER });
+  receipt.push({ type: 'raw', format: 'command', data: "Terms & Conditions applied\n" });
+  receipt.push({ type: 'raw', format: 'command', data: CUT_FULL });
+
+  window.electronAPI.printReceipt(receipt);
+  showSaveMessage('closedOrderPrintMessage', 'Receipt sent to printer.');
 }
 
 async function loadClosedOrderDetailsById(orderId) {
@@ -274,7 +358,9 @@ function setupClosedOrdersPage() {
   const tableBody = document.getElementById('closedOrdersTableBody');
   const refreshButton = document.getElementById('refreshClosedOrdersButton');
   const closeButton = document.getElementById('closeClosedOrderDetailsButton');
+  const closeFooterButton = document.getElementById('closeClosedOrderDetailsFooterButton');
   const backdrop = document.getElementById('closedOrderDetailsBackdrop');
+  const printButton = document.getElementById('printClosedOrderReceiptButton');
 
   if (tableBody) {
     tableBody.addEventListener('click', event => {
@@ -290,7 +376,19 @@ function setupClosedOrdersPage() {
   }
 
   if (closeButton) closeButton.addEventListener('click', closeClosedOrderDetails);
+  if (closeFooterButton) closeFooterButton.addEventListener('click', closeClosedOrderDetails);
   if (backdrop) backdrop.addEventListener('click', closeClosedOrderDetails);
+
+  if (printButton) {
+    printButton.addEventListener('click', () => {
+      if (!closedOrdersState.selectedOrder) return;
+      try {
+        printClosedOrderReceipt(closedOrdersState.selectedOrder);
+      } catch (error) {
+        showSaveMessage('closedOrderPrintMessage', error.message, true);
+      }
+    });
+  }
 
   setupClosedOrdersSearch();
   loadClosedOrders();

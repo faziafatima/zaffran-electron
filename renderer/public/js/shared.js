@@ -993,11 +993,13 @@ function bindCommonChrome() {
 }
 
 
- $(document).ready(function() {
-    $('.select2-js').select2({
-    // theme: "classic"
-});
-});
+ if (typeof $ !== 'undefined') {
+   $(document).ready(function() {
+     $('.select2-js').select2({
+     // theme: "classic"
+   });
+   });
+ }
 
 
 // Utility functions for padding
