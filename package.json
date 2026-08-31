@@ -6,7 +6,7 @@
   "scripts": {
     "start": "electron .",
     "clean": "rm -rf dist node_modules package-lock.json && npm install",
-    "package": "electron-packager . ElectronApp --platform=win32 --arch=x64 --out=dist --icon=resources/icon.png",
+    "package": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\" && electron-packager . ElectronApp --platform=win32 --arch=x64 --out=dist --icon=resources/icon.ico",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -14,7 +14,8 @@
   "license": "ISC",
   "devDependencies": {
     "electron": "^43.4.1",
-    "electron-packager": "^17.1.2"
+    "electron-packager": "^17.1.2",
+    "png-to-ico": "^3.0.2"
   },
   "dependencies": {
     "@printers/printers": "^2.0.0",
