@@ -903,6 +903,23 @@ function updateInlinePriceHint(orderId) {
   hint.textContent = `${getPortionLabel(portion)}: ${formatCurrency(portionPrice)}`;
 }
 
+
+function renderOrderItemsViewTable(items, options = {}) {
+  const emptyMessage = options.emptyMessage || 'No dishes added yet.';
+  if (!items.length) {
+    return `<tr><td colspan="3">${emptyMessage}</td></tr>`;
+  }
+
+  return items.map(item => `
+    <tr>
+        <td>${item.name} (${getPortionLabel(item.portion)})</td>
+        <td>${item.quantity}</td>
+        <td>${formatCurrency(item.price * item.quantity)}</td>
+    </tr>
+  `).join('');
+}
+
+
 function renderOrderItems(items, options = {}) {
   const emptyMessage = options.emptyMessage || 'No dishes added yet.';
   const orderId = options.orderId ?? null;
@@ -1330,15 +1347,18 @@ function renderOrdersCards(items) {
           <span class="status-pill ${statusClass(order.status)}">${order.status || 'Pending'}</span>
           <span class="status-pill info">${itemCount} dish${itemCount === 1 ? '' : 'es'}</span>
         </div>
-        <div class="order-card-head">
-        <div>
             <div style="">${order.customer ? '<b>Customer Name:</b> ' + order.customer.name + ' (' + order.customer.phone + ')' : ''}</div>
             <div style=""> ${order.server_name ? '<b>Server: </b>' + order.server_name : ''}</div>
-        <div>
-        </div>
-        <div class="order-card-items">
-          ${renderOrderItems(orderItems, { orderId: order.id, allowRemove: false, emptyMessage: 'No dishes on this order yet.' })}
-        </div>
+        <table class="table">
+        <thead>
+          <tr>
+            <th>Dish</th>
+            <th>Qty</th>
+            <th>Price</th>
+          </tr>
+        </thead>
+          ${renderOrderItemsViewTable(orderItems, { orderId: order.id, allowRemove: false, emptyMessage: 'No dishes on this order yet.' })}
+        </table>
     
         <div class="order-card-footer">
           <div>
