@@ -212,7 +212,7 @@ function printClosedOrderReceipt(order) {
     showSaveMessage('closedOrderPrintMessage', 'Printer bridge is not available. Please restart the app.', true);
     return;
   }
-
+console.log('Printing closed order receipt for order:', order);
   const restaurant = JSON.parse(localStorage.getItem('restaurant_session') || '{}');
   const items = getClosedOrderItems(order);
   const subtotal = Number(order.item_price || 0);
@@ -244,27 +244,48 @@ function printClosedOrderReceipt(order) {
     { type: 'raw', format: 'command', data: "-----------------------------------------------\n" },
   ];
 
+  var mrpTotal = 0;
+  var calculatedTotal = 0;
   items.forEach(it => {
+    console.log('Processing item:', it);
+    let price = formatCurrency(it.price);
+    if(it.onMrp){
+       price = "MRP";
+       mrpTotal += Number(it.price || 0) * Number(it.quantity || 0);
+    }
+    calculatedTotal += Number(it.price || 0) * Number(it.quantity || 0);
     receipt.push({
       type: 'raw',
       format: 'command',
-      data: formatRowInvoice(it.name || `Item #${it.menuItemId || '-'}`, it.quantity, getClosedOrderPortionLabel(it.portion), formatCurrency(it.price), formatCurrency(Number(it.price || 0) * Number(it.quantity || 0))) + "\n"
+      data: formatRowInvoice(it.name || `Item #${it.menuItemId || '-'}`, it.quantity, getClosedOrderPortionLabel(it.portion),price , formatCurrency(Number(it.price || 0) * Number(it.quantity || 0))) + "\n"
     });
   });
-
+calculatedTotal += taxAmount;
   receipt.push({ type: 'raw', format: 'command', data: "-----------------------------------------------\n" });
-  receipt.push({ type: 'raw', format: 'command', data: formatTotals("Subtotal", formatCurrency(subtotal)) + "\n" });
+  receipt.push({ type: 'raw', format: 'command', data: formatTotals("Taxable Subtotal", formatCurrency(subtotal- mrpTotal)) + "\n" });
   receipt.push({ type: 'raw', format: 'command', data: formatTotals("Tax (" + taxPercentage.toFixed(0) + "%)", formatCurrency(taxAmount)) + "\n" });
+
+  if(mrpTotal > 0) {
+    receipt.push({ type: 'raw', format: 'command', data: formatTotals("MRP Items Total", formatCurrency(mrpTotal)) + "\n" });
+  }
 
   if (discountAmount > 0) {
     const discountName = `Discount${discountPerc ? ` (${discountPerc.toFixed(0)}%)` : ''}`;
     receipt.push({ type: 'raw', format: 'command', data: formatTotals(discountName, `- ${formatCurrency(discountAmount)}`) + "\n" });
+    calculatedTotal -= discountAmount;
   }
 
   if (onSpotDiscount > 0) {
     receipt.push({ type: 'raw', format: 'command', data: formatTotals("On Spot Discount", `- ${formatCurrency(onSpotDiscount)}`) + "\n" });
+    calculatedTotal -= onSpotDiscount;
   }
 
+  receipt.push({ type: 'raw', format: 'command', data: formatTotals("Total Amount", formatCurrency(calculatedTotal)) + "\n" });
+
+  if(calculatedTotal < totalPayable){
+    let adjustment = totalPayable - calculatedTotal;
+    receipt.push({ type: 'raw', format: 'command', data: formatTotals("Adjustment", formatCurrency(adjustment)) + "\n" });
+  }
   receipt.push({ type: 'raw', format: 'command', data: "===============================================\n" });
   receipt.push({ type: 'raw', format: 'command', data: BOLD_ON });
   receipt.push({ type: 'raw', format: 'command', data: formatTotals("Total Payable", formatCurrency(totalPayable)) + "\n" });
