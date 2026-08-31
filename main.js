@@ -1,9 +1,11 @@
-const { app: electronApp, BrowserWindow } = require('electron');
+const { app: electronApp, BrowserWindow, ipcMain } = require('electron');
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const session = require('express-session');
 const axios = require('axios');
+const { getPrinterByName  } = require('@printers/printers');
+const sharp = require('sharp');
 
 function resolveBackendBase() {
   const raw = process.env.BACKEND_URL || readConfiguredBackendUrl();
@@ -340,17 +342,29 @@ app.use((req, res) => {
 });
 
 
+let mainWindow = null;
+
 function createWindow() {
+  console.log('Creating main application window...');
+  console.log(path.join(__dirname, 'preload.js'));
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
     webPreferences: {
-    //   preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       partition: 'persist:restaurantos' // ensures cookies persist
     }
   });
-  win.loadURL(`http://localhost:${port}`);
+  mainWindow = win;
+  win.webContents.on('console-message', (event, level, message) => {
+    console.log(`[renderer:${level}] ${message}`);
+  });
+  win.webContents.once('did-finish-load', async () => {
+    const isPreloadLoaded = await win.webContents.executeJavaScript("typeof window.electronAPI === 'object'");
+    console.log(`Preload bridge available in renderer: ${isPreloadLoaded}`);
+  });
+  win.loadURL(`http://localhost:${port}/login`);
 }
 
 // Start Express, then Electron
@@ -366,4 +380,139 @@ electronApp.on('window-all-closed', () => {
 
 electronApp.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) createWindow();
+});
+
+const PRINTER_NAME = "POS80 Printer(3)"; // Replace with your actual printer name
+
+// Lists the OS-registered printer names so PRINTER_NAME can be matched exactly (helps diagnose Bluetooth/offline printers)
+ipcMain.handle('list-printers', async () => {
+  if (!mainWindow) return [];
+  const printers = await mainWindow.webContents.getPrintersAsync();
+  return printers.map(p => ({ name: p.name, status: p.status, isDefault: p.isDefault }));
+});
+
+
+async function convertImageToEscPosRaster(imagePath) {
+  const absoluteImagePath = path.join(__dirname, 'renderer', 'public', imagePath.replace(/^\/+/, ''));
+  const { data, info } = await sharp(absoluteImagePath)
+    .resize({ width: 384, withoutEnlargement: true })
+    .flatten({ background: '#ffffff' })
+    .grayscale()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const bytesPerRow = Math.ceil(info.width / 8);
+  const rasterData = Buffer.alloc(bytesPerRow * info.height);
+
+  for (let y = 0; y < info.height; y += 1) {
+    for (let x = 0; x < info.width; x += 1) {
+      if (data[(y * info.width) + x] < 160) {
+        rasterData[(y * bytesPerRow) + Math.floor(x / 8)] |= 0x80 >> (x % 8);
+      }
+    }
+  }
+
+  const header = Buffer.from([
+    0x1D, 0x76, 0x30, 0x00,
+    bytesPerRow & 0xFF, (bytesPerRow >> 8) & 0xFF,
+    info.height & 0xFF, (info.height >> 8) & 0xFF
+  ]);
+  return Buffer.concat([header, rasterData]);
+}
+
+async function convertReceiptToBuffer(receipt) {
+  const bufferParts = [];
+
+  for (const entry of receipt) {
+    if (entry.type === 'raw' && entry.format === 'command') {
+      if (Buffer.isBuffer(entry.data)) {
+        // Already a Buffer (like ESC_INIT, ALIGN_CENTER, etc.)
+        bufferParts.push(entry.data);
+      } else if (Array.isArray(entry.data)) {
+        bufferParts.push(Buffer.from(entry.data));
+      } else if (typeof entry.data === 'string') {
+        // Preserve ESC/POS bytes exactly for raw command strings
+        bufferParts.push(Buffer.from(entry.data, 'binary'));
+      }
+    } else if (entry.type === 'raw' && entry.format === 'image' && entry.flavor === 'file' && typeof entry.data === 'string') {
+      bufferParts.push(await convertImageToEscPosRaster(entry.data));
+    }
+  }
+
+  return Buffer.concat(bufferParts);
+}
+
+
+
+// Listen for a print event from the frontend renderer
+ipcMain.on('print-receipt', async (event, data) => {
+
+    console.log('Received print request with data:', data);
+
+  if (!Array.isArray(data) || data.length === 0) {
+    event.reply('print-receipt-result', { success: false, message: 'Invalid print payload' });
+    return;
+  }
+
+  
+
+    try {
+        // 2. Fetch the target Windows system printer instance manually
+        const printer = await getPrinterByName(PRINTER_NAME);
+        
+        if (!printer) {
+            console.error(`Printer named "${PRINTER_NAME}" was not found on this machine.`);
+          event.reply('print-receipt-result', { success: false, message: `Printer not found: ${PRINTER_NAME}` });
+            return;
+        }
+
+        const finalBuffer = await convertReceiptToBuffer(data);
+
+        // // 3. Define standard ESC/POS hexadecimal command markers
+        // const initPrinter = Buffer.from([0x1B, 0x40]);            // ESC @ (Initialize)
+        // const centerAlign = Buffer.from([0x1B, 0x61, 0x01]);        // ESC a 1 (Center Align)
+        // const leftAlign   = Buffer.from([0x1B, 0x61, 0x00]);        // ESC a 0 (Left Align)
+        // const boldOn      = Buffer.from([0x1B, 0x45, 0x01]);        // ESC E 1 (Bold On)
+        // const boldOff     = Buffer.from([0x1B, 0x45, 0x00]);        // ESC E 0 (Bold Off)
+        // const cutPaper    = Buffer.from([0x1D, 0x56, 0x42, 0x00]);   // GS V 66 0 (Feed and Cut)
+        
+        // // 4. Build receipt string text data blocks
+        // let textContent = '';
+        // textContent += 'Bluetooth Connection Active\n';
+        // textContent += '--------------------------------\n';
+        // textContent += 'Item Description       Price\n';
+        // textContent += 'Thermal Receipt Paper  $10.00\n';
+        // textContent += '--------------------------------\n';
+        // textContent += 'Total Paid:            $10.00\n\n';
+        // textContent += '  Barcode Placeholder: 12345678 \n\n';
+        
+        // // 5. Add lines of blank feeds so data rolls past the cutter blade edge
+        // textContent += '\n\n\n'; 
+        
+        // // 6. Merge the layout command flags and string fragments together
+        // const finalBuffer = Buffer.concat([
+        //     initPrinter,
+        //     centerAlign,
+        //     boldOn,
+        //     Buffer.from('STORE RECEIPT\n\n'),
+        //     boldOff,
+        //     leftAlign,
+        //     Buffer.from(textContent),
+        //     cutPaper
+        // ]);
+
+        // 7. Convert the Node Buffer into a Uint8Array array layout required by Rust
+        const printData = new Uint8Array(finalBuffer);
+
+        console.log(`Dispatching buffer stream to printer queue: ${PRINTER_NAME}...`);
+        
+        // 8. Execute raw printing task directly via the device API model
+        const jobId = await printer.printBytes(printData);
+        console.log(`Silent ESC/POS print job created successfully. Windows Job ID: ${jobId}`);
+        event.reply('print-receipt-result', { success: true, jobId });
+
+    } catch (error) {
+        console.error('Core Windows print spooler process error details:', error);
+        event.reply('print-receipt-result', { success: false, message: error.message || 'Print failed' });
+    }
+
 });

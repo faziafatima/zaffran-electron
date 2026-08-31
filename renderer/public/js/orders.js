@@ -1407,100 +1407,125 @@ async function removeOrder(id) {
 }
 
 function printKot(orderId) {
-  var kot = orderKotStatus.get(orderId + IN_KITCHEN);
+  console.log('printKot called with orderId:', orderId);
 
+  if (!window.electronAPI || typeof window.electronAPI.printReceipt !== 'function') {
+    console.error('electronAPI.printReceipt is not available in renderer');
+    showSaveMessage('kotPrintMessage', 'Printer bridge is not available. Please restart the app.', true);
+    return;
+  }
+
+  let kot = orderKotStatus.get(orderId + IN_KITCHEN);
+  let kotOut = orderKotStatus.get(orderId + OUT_KITCHEN);
+
+  if (!kot && !kotOut) {
+    const fallbackOrder = orderCrudState.items.find(item => Number(item.id) === Number(orderId));
+    if (fallbackOrder) {
+      const groupedItems = groupKotItems(normalizeOrderItems(fallbackOrder));
+      const inKitchenItems = groupedItems
+        .filter(item => normalizeKitchenType(item.kitchenType) === 'in-kitchen')
+        .map(item => ({ ...item, quantityToPrint: Number(item.quantity || 0) }));
+      const outKitchenItems = groupedItems
+        .filter(item => normalizeKitchenType(item.kitchenType) === 'out-kitchen')
+        .map(item => ({ ...item, quantityToPrint: Number(item.quantity || 0) }));
+
+      if (inKitchenItems.length) {
+        kot = { orderId: fallbackOrder.id, kitchenType: 'in-kitchen', order: fallbackOrder, items: inKitchenItems };
+        orderKotStatus.set(orderId + IN_KITCHEN, kot);
+      }
+      if (outKitchenItems.length) {
+        kotOut = { orderId: fallbackOrder.id, kitchenType: 'out-kitchen', order: fallbackOrder, items: outKitchenItems };
+        orderKotStatus.set(orderId + OUT_KITCHEN, kotOut);
+      }
+    }
+  }
+
+  if (!kot && !kotOut) {
+    console.error('No KOT payload available for order:', orderId);
+    showSaveMessage('kotPrintMessage', 'No KOT items available to print.', true);
+    return;
+  }
 
   if (kot) {
     var itemList = kot.items || [];
     var order = kot.order;
 
-   var orderType = order.order_type == 'Dine-in' ? 'Dine-in\nTable:' + (order.tableId || '-')
+    var orderType = order.order_type == 'Dine-in' ? 'Dine-in\nTable:' + (order.tableId || '-')
       : (order.order_type == 'car' ? 'Car Number: ' + (order.customer?.carNumber || '-')
         : '' + order.order_type + '');
 
+    const receipt = [
+      { type: 'raw', format: 'command', data: ESC_INIT },
+      { type: 'raw', format: 'command', data: ALIGN_CENTER },
+      { type: 'raw', format: 'command', data: BOLD_ON },
+      { type: 'raw', format: 'command', data: "KOT - " + kot.kitchenType + "\n" },
+      { type: 'raw', format: 'command', data: getFormattedCurrentDateTime() + " Ghaziabad, India\n" },
+      { type: 'raw', format: 'command', data: BOLD_OFF },
+      { type: 'raw', format: 'command', data: "Order No: " + order.strOrderId + "\n" },
+      { type: 'raw', format: 'command', data: orderType + "\n" },
+      { type: 'raw', format: 'command', data: "Server: " + (order.server_name || '') + "\n" },
+      { type: 'raw', format: 'command', data: "--------------------------------\n" },
+      { type: 'raw', format: 'command', data: ALIGN_LEFT },
+      { type: 'raw', format: 'command', data: "Item                         Qty   Portion\n" },
+      { type: 'raw', format: 'command', data: "----------------------------------------------\n" },
+    ];
 
-        const receipt = [
-    { type: 'raw', format: 'command', data: ESC_INIT },
-    { type: 'raw', format: 'command', data: ALIGN_CENTER },
-    { type: 'raw', format: 'command', data: BOLD_ON },
-    { type: 'raw', format: 'command', data: "KOT - " + kot.kitchenType + "\n" },
-    { type: 'raw', format: 'command', data: getFormattedCurrentDateTime() + " Ghaziabad, India\n" },
-    { type: 'raw', format: 'command', data: BOLD_OFF },
-    { type: 'raw', format: 'command', data: "Order No: " + order.strOrderId + "\n" },
-    { type: 'raw', format: 'command', data: orderType + "\n" },
-    { type: 'raw', format: 'command', data: "Server: " + (order.server_name || '') + "\n" },
-    { type: 'raw', format: 'command', data: "--------------------------------\n" },
-    { type: 'raw', format: 'command', data: ALIGN_LEFT },
-    { type: 'raw', format: 'command', data: "Item                         Qty   Portion\n" },
-    { type: 'raw', format: 'command', data: "----------------------------------------------\n" },
-  ];
+    itemList.forEach(it => {
+      receipt.push({ type: 'raw', format: 'command', data: formatRow(it.name, it.quantityToPrint, getPortionLabel(it.portion)) + "\n" });
+    });
 
-  // Add each item row
-  itemList.forEach(it => {
-    receipt.push({ type: 'raw', format: 'command', data: formatRow(it.name, it.quantityToPrint, getPortionLabel(it.portion))+"\n" });
-  });
+    receipt.push({ type: 'raw', format: 'command', data: "----------------------------------------------\n" });
+    receipt.push({ type: 'raw', format: 'command', data: CUT_FULL });
 
-  receipt.push({ type: 'raw', format: 'command', data: "----------------------------------------------\n" });
-  receipt.push({ type: 'raw', format: 'command', data: CUT_FULL });
-
-
-
-
-    // qz.print(config, receipt).catch(err => console.error(err));
+    console.log('Sending IN KOT receipt via electronAPI.printReceipt');
+    window.electronAPI.printReceipt(receipt);
   }
 
-  
-  var kotOut = orderKotStatus.get(orderId + OUT_KITCHEN);
-if (kotOut) {
-    var itemList = kotOut.items || [];
-    var order = kotOut.order;
+  if (kotOut) {
+    var outItemList = kotOut.items || [];
+    var outOrder = kotOut.order;
 
-   var orderType = order.order_type == 'Dine-in' ? 'Dine-in\nTable:' + (order.tableId || '-')
-      : (order.order_type == 'car' ? 'Car Number: ' + (order.customer?.carNumber || '-')
-        : '' + order.order_type + '');
+    var outOrderType = outOrder.order_type == 'Dine-in' ? 'Dine-in\nTable:' + (outOrder.tableId || '-')
+      : (outOrder.order_type == 'car' ? 'Car Number: ' + (outOrder.customer?.carNumber || '-')
+        : '' + outOrder.order_type + '');
 
+    const outReceipt = [
+      { type: 'raw', format: 'command', data: ESC_INIT },
+      { type: 'raw', format: 'command', data: ALIGN_CENTER },
+      { type: 'raw', format: 'command', data: BOLD_ON },
+      { type: 'raw', format: 'command', data: "KOT - " + kotOut.kitchenType + "\n" },
+      { type: 'raw', format: 'command', data: getFormattedCurrentDateTime() + " Ghaziabad, India\n" },
+      { type: 'raw', format: 'command', data: BOLD_OFF },
+      { type: 'raw', format: 'command', data: "Order No: " + outOrder.strOrderId + "\n" },
+      { type: 'raw', format: 'command', data: outOrderType + "\n" },
+      { type: 'raw', format: 'command', data: "Server: " + (outOrder.server_name || '') + "\n" },
+      { type: 'raw', format: 'command', data: "--------------------------------\n" },
+      { type: 'raw', format: 'command', data: ALIGN_LEFT },
+      { type: 'raw', format: 'command', data: "Item                         Qty   Portion\n" },
+      { type: 'raw', format: 'command', data: "----------------------------------------------\n" },
+    ];
 
-        const receipt = [
-    { type: 'raw', format: 'command', data: ESC_INIT },
-    { type: 'raw', format: 'command', data: ALIGN_CENTER },
-    { type: 'raw', format: 'command', data: BOLD_ON },
-    { type: 'raw', format: 'command', data: "KOT - " + kotOut.kitchenType + "\n" },
-    { type: 'raw', format: 'command', data: getFormattedCurrentDateTime() + " Ghaziabad, India\n" },
-    { type: 'raw', format: 'command', data: BOLD_OFF },
-    { type: 'raw', format: 'command', data: "Order No: " + order.strOrderId + "\n" },
-    { type: 'raw', format: 'command', data: orderType + "\n" },
-    { type: 'raw', format: 'command', data: "Server: " + (order.server_name || '') + "\n" },
-    { type: 'raw', format: 'command', data: "--------------------------------\n" },
-    { type: 'raw', format: 'command', data: ALIGN_LEFT },
-    { type: 'raw', format: 'command', data: "Item                         Qty   Portion\n" },
-    { type: 'raw', format: 'command', data: "----------------------------------------------\n" },
-  ];
+    outItemList.forEach(it => {
+      outReceipt.push({ type: 'raw', format: 'command', data: formatRow(it.name, it.quantityToPrint, getPortionLabel(it.portion)) + "\n" });
+    });
 
-  // Add each item row
-  itemList.forEach(it => {
-    receipt.push({ type: 'raw', format: 'command', data: formatRow(it.name, it.quantityToPrint, getPortionLabel(it.portion))+"\n" });
-  });
+    outReceipt.push({ type: 'raw', format: 'command', data: "----------------------------------------------\n" });
+    outReceipt.push({ type: 'raw', format: 'command', data: CUT_FULL });
 
-  receipt.push({ type: 'raw', format: 'command', data: "----------------------------------------------\n" });
-  receipt.push({ type: 'raw', format: 'command', data: CUT_FULL });
-
-
-
-  
-    // qz.print(config, receipt).catch(err => console.error(err));
+    console.log('Sending OUT KOT receipt via electronAPI.printReceipt');
+    window.electronAPI.printReceipt(outReceipt);
   }
 
 
-
-  const paperWidth = document.getElementById('kotPaperWidth')?.value || '58';
-  document.body.classList.remove('kot-print-58mm', 'kot-print-80mm');
-  document.body.classList.add(paperWidth === '80' ? 'kot-print-80mm' : 'kot-print-58mm');
-  document.body.classList.add('printing-kot-preview');
-  window.print();
-  window.setTimeout(() => {
-    document.body.classList.remove('printing-kot-preview');
-    document.body.classList.remove('kot-print-58mm', 'kot-print-80mm');
-  }, 250);
+  // const paperWidth = document.getElementById('kotPaperWidth')?.value || '58';
+  // document.body.classList.remove('kot-print-58mm', 'kot-print-80mm');
+  // document.body.classList.add(paperWidth === '80' ? 'kot-print-80mm' : 'kot-print-58mm');
+  // document.body.classList.add('printing-kot-preview');
+  // window.print();
+  // window.setTimeout(() => {
+  //   document.body.classList.remove('printing-kot-preview');
+  //   document.body.classList.remove('kot-print-58mm', 'kot-print-80mm');
+  // }, 250);
 
 }
 
@@ -1524,7 +1549,7 @@ function printCloseOrderReceipt() {
   const receipt = [
     { type: 'raw', format: 'command', data: ESC_INIT },
     { type: 'raw', format: 'command', data: ALIGN_CENTER },
-    { type: 'raw', format: 'image', flavor: 'file', data: 'https://thezaffran.in/img/logo-bw-small.png', options: { language: "ESCPOS", dotDensity: 'double' } },
+    { type: 'raw', format: 'image', flavor: 'file', data: '/img/logo-bw-small.png' },
     { type: 'raw', format: 'command', data: BOLD_ON },
     { type: 'raw', format: 'command', data: restaurant.name + "\n" },
     { type: 'raw', format: 'command', data: restaurant.address + "\n" },
@@ -1587,18 +1612,18 @@ function printCloseOrderReceipt() {
   receipt.push({ type: 'raw', format: 'command', data: CUT_FULL });
 
   //fazia
-
+window.electronAPI.printReceipt(receipt);
   // qz.print(config, receipt).catch(err => console.error(err));
 
-  const paperWidth = document.getElementById('closeOrderPaperWidth')?.value || '58';
-  document.body.classList.remove('receipt-print-58mm', 'receipt-print-80mm');
-  document.body.classList.add(paperWidth === '80' ? 'receipt-print-80mm' : 'receipt-print-58mm');
-  document.body.classList.add('printing-close-order-preview');
-  window.print();
-  window.setTimeout(() => {
-    document.body.classList.remove('printing-close-order-preview');
-    document.body.classList.remove('receipt-print-58mm', 'receipt-print-80mm');
-  }, 250);
+  // const paperWidth = document.getElementById('closeOrderPaperWidth')?.value || '58';
+  // document.body.classList.remove('receipt-print-58mm', 'receipt-print-80mm');
+  // document.body.classList.add(paperWidth === '80' ? 'receipt-print-80mm' : 'receipt-print-58mm');
+  // document.body.classList.add('printing-close-order-preview');
+  // window.print();
+  // window.setTimeout(() => {
+  //   document.body.classList.remove('printing-close-order-preview');
+  //   document.body.classList.remove('receipt-print-58mm', 'receipt-print-80mm');
+  // }, 250);
 }
 
 function buildFormBaseOrder() {
@@ -2151,6 +2176,15 @@ function setupOrderCrud() {
 
 document.addEventListener('DOMContentLoaded', () => {
   bindCommonChrome();
+  if (window.electronAPI?.onPrintResult) {
+    window.electronAPI.onPrintResult((result) => {
+      if (result?.success) {
+        console.log('Print result from main process:', result);
+      } else {
+        console.error('Print failed in main process:', result?.message || 'Unknown print error');
+      }
+    });
+  }
   setupModalAwareForms();
   loadOrderMeta();
   setupOrderCrud();

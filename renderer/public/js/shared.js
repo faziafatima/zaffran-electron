@@ -1042,56 +1042,62 @@ const PRINTER_NAME = "POS80 Printer(3)";
 // =========================
 // ESC/POS Command Constants
 // =========================
+const ESC_INIT = [0x1B, 0x40];
+const ALIGN_CENTER = [0x1B, 0x61, 0x01];
+const ALIGN_LEFT = [0x1B, 0x61, 0x00];
+const BOLD_ON = [0x1B, 0x45, 0x01];
+const BOLD_OFF = [0x1B, 0x45, 0x00];
+const CUT_FULL = [0x1D, 0x56, 0x42, 0x00];
 
 // Initialization
-const ESC_INIT = "\x1B\x40";   // Initialize printer (reset)
+// const ESC_INIT = "\x1B\x40";   // Initialize printer (reset)
 
-// Line & Spacing
-const LF = "\x0A";             // Line feed (new line)
+// // Line & Spacing
+// const LF = "\x0A";             // Line feed (new line)
 
-// Alignment
-const ALIGN_LEFT   = "\x1B\x61\x00";
-const ALIGN_CENTER = "\x1B\x61\x01";
-const ALIGN_RIGHT  = "\x1B\x61\x02";
+// // Alignment
+// const ALIGN_LEFT   = "\x1B\x61\x00";
+// const ALIGN_CENTER = "\x1B\x61\x01";
+// const ALIGN_RIGHT  = "\x1B\x61\x02";
 
-// Font Styles
-const FONT_NORMAL       = "\x1B\x21\x00";
-const FONT_BOLD         = "\x1B\x21\x08";
-const FONT_DOUBLE_HEIGHT= "\x1B\x21\x10";
-const FONT_DOUBLE_WIDTH = "\x1B\x21\x20";
-const FONT_BIG          = "\x1B\x21\x30"; // Double height + width
+// // Font Styles
+// const FONT_NORMAL       = "\x1B\x21\x00";
+// const FONT_BOLD         = "\x1B\x21\x08";
+// const FONT_DOUBLE_HEIGHT= "\x1B\x21\x10";
+// const FONT_DOUBLE_WIDTH = "\x1B\x21\x20";
+// const FONT_BIG          = "\x1B\x21\x30"; // Double height + width
 
-// Bold
-const BOLD_ON  = "\x1B\x45\x01";
-const BOLD_OFF = "\x1B\x45\x00";
+// // Bold
+// const BOLD_ON  = "\x1B\x45\x01";
+// const BOLD_OFF = "\x1B\x45\x00";
 
-// Underline
-const UNDERLINE_OFF    = "\x1B\x2D\x00";
-const UNDERLINE_SINGLE = "\x1B\x2D\x01";
-const UNDERLINE_DOUBLE = "\x1B\x2D\x02";
+// // Underline
+// const UNDERLINE_OFF    = "\x1B\x2D\x00";
+// const UNDERLINE_SINGLE = "\x1B\x2D\x01";
+// const UNDERLINE_DOUBLE = "\x1B\x2D\x02";
 
-// Fonts
-const FONT_A = "\x1B\x4D\x00"; // 12x24
-const FONT_B = "\x1B\x4D\x01"; // 9x17
-const FONT_C = "\x1B\x4D\x02"; // 8x16
+// // Fonts
+// const FONT_A = "\x1B\x4D\x00"; // 12x24
+// const FONT_B = "\x1B\x4D\x01"; // 9x17
+// const FONT_C = "\x1B\x4D\x02"; // 8x16
 
-// Paper Cut
-const CUT_PARTIAL = "\x1D\x56\x00";
-const CUT_FULL    = "\x1D\x56\x01";
+// // Paper Cut
+// const CUT_PARTIAL = "\x1D\x56\x00";
+// const CUT_FULL    = "\x1D\x56\x01";
 
-// Reverse (Black/White Invert)
-const REVERSE_ON  = "\x1D\x42\x01";
-const REVERSE_OFF = "\x1D\x42\x00";
+// // Reverse (Black/White Invert)
+// const REVERSE_ON  = "\x1D\x42\x01";
+// const REVERSE_OFF = "\x1D\x42\x00";
 
-// Cash Drawer
-const OPEN_DRAWER = "\x1B\x70\x00\x19\xFA";
+// // Cash Drawer
+// const OPEN_DRAWER = "\x1B\x70\x00\x19\xFA";
 
-// =========================
-// Advanced Features
-// =========================
+// // =========================
+// // Advanced Features
+// // =========================
 
-// Barcode (example: EAN13)
-const BARCODE_EAN13 = "\x1D\x6B\x02"; // Followed by data + \x00 terminator
+// // Barcode (example: EAN13)
+// const BARCODE_EAN13 = "\x1D\x6B\x02"; // Followed by data + \x00 terminator
 
-// QR Code (store + print sequence)
-const QR_STORE = "\x1D\x28\x6B\x03\x00\x31\x43\x03"; // Store data
+// // QR Code (store + print sequence)
+// const QR_STORE = "\x1D\x28\x6B\x03\x00\x31\x43\x03"; // Store data
