@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="shortcut icon" href="../images/favicon.ico">
+  </head>
+  <body data-role="<%= role %>" data-user="<%= user %>">
+    <%- include('../partials/header.ejs') %>
+    <div class="app-shell">
+      <%- include('../partials/sidebar.ejs') %>
+      <main class="main-content">
+        <div class="topbar">
+          <div><h2>Billing</h2><p>Review open invoices and settle payments quickly.</p></div>
+          <div class="topbar-actions">
+            <a href="/orders/open" class="button ghost-button" style="background:#fff;">View Open Orders</a>
+            <a href="/orders/new" class="button primary">New Sale</a>
+          </div>
+        </div>
+        <section class="grid cards">
+          <div class="card"><div class="label">Outstanding Amount</div><div class="value">₹6,420</div><div class="hint">4 invoices pending</div></div>
+          <div class="card"><div class="label">Collected Today</div><div class="value">₹18,960</div><div class="hint">Across 22 invoices</div></div>
+          <div class="card"><div class="label">Pending Invoices</div><div class="value">4</div><div class="hint">Needs follow-up</div></div>
+          <div class="card"><div class="label">Average Ticket</div><div class="value">₹862</div><div class="hint">Per settled invoice</div></div>
+        </section>
+        <section class="panel" style="margin-top:16px;">
+          <div class="menu-toolbar" style="margin-bottom:12px;">
+            <input type="text" class="menu-search" placeholder="Search by invoice, customer or table…" />
+            <select>
+              <option value="">All statuses</option>
+              <option>Paid</option>
+              <option>Pending</option>
+              <option>Refunded</option>
+            </select>
+            <select>
+              <option value="">All order types</option>
+              <option>Dine-in</option>
+              <option>Takeaway</option>
+              <option>Car</option>
+            </select>
+          </div>
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr><th>Invoice</th><th>Customer</th><th>Table / Type</th><th>Payment</th><th>Amount</th><th>Status</th><th>Actions</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>#1001</td><td>Jared Wilson</td><td>Table 4 · Dine-in</td><td>UPI</td><td>₹1,480.00</td>
+                  <td><span class="status-pill warning">Pending</span></td>
+                  <td><button type="button" class="menu-action-btn">View</button> <button type="button" class="menu-action-btn print">Print</button></td>
+                </tr>
+                <tr>
+                  <td>#1002</td><td>Mina Alvarez</td><td>Takeaway</td><td>Cash</td><td>₹920.00</td>
+                  <td><span class="status-pill success">Paid</span></td>
+                  <td><button type="button" class="menu-action-btn">View</button> <button type="button" class="menu-action-btn print">Print</button></td>
+                </tr>
+                <tr>
+                  <td>#1003</td><td>Car · DL-05-XY-1234</td><td>Car</td><td>Card</td><td>₹640.00</td>
+                  <td><span class="status-pill success">Paid</span></td>
+                  <td><button type="button" class="menu-action-btn">View</button> <button type="button" class="menu-action-btn print">Print</button></td>
+                </tr>
+                <tr>
+                  <td>#1004</td><td>Ritika Sharma</td><td>Table 9 · Dine-in</td><td>Pending</td><td>₹2,150.00</td>
+                  <td><span class="status-pill danger">Overdue</span></td>
+                  <td><button type="button" class="menu-action-btn">View</button> <button type="button" class="menu-action-btn print">Print</button></td>
+                </tr>
+                <tr>
+                  <td>#1005</td><td>Farhan Qureshi</td><td>Table 2 · Dine-in</td><td>UPI</td><td>₹1,230.00</td>
+                  <td><span class="status-pill success">Paid</span></td>
+                  <td><button type="button" class="menu-action-btn">View</button> <button type="button" class="menu-action-btn print">Print</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+    <script>
+      window.__APP_CONTEXT__ = {
+        role: "<%= role %>",
+        user: "<%= user %>",
+        restaurant: "<%= restaurant || '' %>"
+      };
+    </script>
+    <script src="/js/shared.js"></script>
+    <script src="/js/billing.js"></script>
+  </body>
+</html>
