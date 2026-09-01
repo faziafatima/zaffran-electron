@@ -790,7 +790,7 @@ function getCloseOrderNoTax() {
   return Boolean(document.getElementById('closeOrderNoTax')?.checked);
 }
 
-function refreshCloseOrderSummary(forceRecalculateAmounts = true) {
+function refreshCloseOrderSummary(forceRecalculateAmounts = false) {
   const order = orderCrudState.items.find(item => Number(item.id) === Number(orderCrudState.closingId));
   if (!order) return null;
 
@@ -1871,7 +1871,7 @@ function setupOrderCrud() {
   const noTaxCheckbox = document.getElementById('closeOrderNoTax');
   if (noTaxCheckbox) {
     noTaxCheckbox.addEventListener('change', () => {
-      refreshCloseOrderSummary(true);
+      refreshCloseOrderSummary();
     });
   }
 
