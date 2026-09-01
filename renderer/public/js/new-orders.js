@@ -1,6 +1,8 @@
 const orderCrudState = {
   menuItems: [],
-  draftItems: []
+  draftItems: [],
+  activeCategory: 'All',
+  searchTerm: ''
 };
 
 function isCarOrderSelected() {
@@ -199,25 +201,44 @@ function sumOrderItems(items) {
 
 function renderOrderItems(items) {
   if (!items.length) {
-    return '<div class="order-empty">Add dishes to build this order.</div>';
+    return `
+      <div class="empty-state">
+        <div class="empty-icon">🛒</div>
+        <div class="empty-title">No items yet</div>
+        <div class="empty-text">Select items from the menu to add them here.</div>
+      </div>
+    `;
   }
 
   return items.map(item => `
-    <div class="order-item-row">
-      <div>
-        <strong>${item.quantity} x ${item.name}</strong>
-        <div class="muted">${getPortionLabel(item.portion)} • ${formatCurrency(item.price)} each</div>
+    <div class="cart-line">
+      <div class="cart-line-top">
+        <div>
+          <div class="cart-item-name">${item.name}</div>
+          <div class="cart-item-meta">${getPortionLabel(item.portion)} • ${formatCurrency(item.price)} each</div>
+        </div>
+        <div class="cart-item-price">${formatCurrency(item.price * item.quantity)}</div>
       </div>
-      <div class="order-item-row-actions">
-        <strong>${formatCurrency(item.price * item.quantity)}</strong>
+      <div class="qty-control">
         <button
           type="button"
-          class="menu-action-btn delete"
+          class="qty-btn"
+          data-order-action="decrement-draft-item"
+          data-menu-item-id="${item.menuItemId}"
+          data-portion="${item.portion}">−</button>
+        <span class="qty-value">${item.quantity}</span>
+        <button
+          type="button"
+          class="qty-btn"
+          data-order-action="increment-draft-item"
+          data-menu-item-id="${item.menuItemId}"
+          data-portion="${item.portion}">+</button>
+        <button
+          type="button"
+          class="remove-item"
           data-order-action="remove-draft-item"
           data-menu-item-id="${item.menuItemId}"
-          data-portion="${item.portion}">
-          Remove
-        </button>
+          data-portion="${item.portion}">✕</button>
       </div>
     </div>
   `).join('');
@@ -284,6 +305,22 @@ function removeItemFromDraft(menuItemId, portion) {
   }));
 }
 
+function adjustDraftItemQuantity(menuItemId, portion, delta) {
+  const normalizedPortion = normalizePortion(portion);
+  const nextItems = orderCrudState.draftItems.map(item => ({ ...item }));
+  const index = nextItems.findIndex(item => (
+    Number(item.menuItemId) === Number(menuItemId)
+      && normalizePortion(item.portion) === normalizedPortion
+  ));
+  if (index === -1) return;
+
+  nextItems[index].quantity += delta;
+  if (nextItems[index].quantity <= 0) {
+    nextItems.splice(index, 1);
+  }
+  setDraftItems(nextItems);
+}
+
 function buildOrderPayload(customerIdOverride = null) {
   const subtotal = sumOrderItems(orderCrudState.draftItems);
   const customerIdInput = Number(document.getElementById('orderCustomerId')?.value || 0);
@@ -320,19 +357,97 @@ function buildOrderPayload(customerIdOverride = null) {
   };
 }
 
-function renderDishes(filter = '') {
+function getMenuCategories() {
+  const categories = new Set();
+  let hasFavourites = false;
+  orderCrudState.menuItems.forEach(dish => {
+    if (dish?.isFavourite) hasFavourites = true;
+    const category = String(dish?.category || 'Uncategorized').trim() || 'Uncategorized';
+    categories.add(category);
+  });
+  return {
+    hasFavourites,
+    categories: Array.from(categories).sort((a, b) => a.localeCompare(b))
+  };
+}
+
+function renderCategories() {
+  const categoryList = document.getElementById('categoryList');
+  if (!categoryList) return;
+
+  const { hasFavourites, categories } = getMenuCategories();
+  const buttons = ['All', ...(hasFavourites ? ['Favourites'] : []), ...categories];
+
+  categoryList.innerHTML = buttons.map(category => `
+    <button
+      type="button"
+      class="category-btn ${orderCrudState.activeCategory === category ? 'active' : ''}"
+      data-category="${category}">${category}</button>
+  `).join('');
+}
+
+function renderDishCard(dish) {
+  const portions = [
+    { key: 'qtr', label: 'Qtr', price: dish.qtr_price },
+    { key: 'half', label: 'Half', price: dish.half_price },
+    { key: 'full', label: 'Full', price: dish.full_price }
+  ].filter(p => Number(p.price || 0) > 0);
+
+  const availablePortions = portions.length ? portions : [{ key: 'full', label: 'Full', price: 0 }];
+  const showLabels = availablePortions.length > 1;
+
+  const options = availablePortions.map(portion => (
+    `<option value="${portion.key}">${showLabels ? `${portion.label} - ` : ''}${formatCurrency(Number(portion.price || 0))}</option>`
+  )).join('');
+
+  return `
+    <div class="menu-card" data-dish-id="${dish.id}">
+      <div class="menu-thumb"><img src="${getDishImageSrc(dish)}" alt="${dish.name || 'Dish'}" /></div>
+      <div class="menu-card-body">
+        <div class="menu-item-name">${dish.name || 'Unnamed dish'}</div>
+        <div class="menu-item-category">${dish.category || 'Uncategorized'}</div>
+        <select data-dish-portion="${dish.id}">${options}</select>
+        <div class="menu-item-footer">
+          <input type="number" data-dish-qty="${dish.id}" min="1" value="1" style="width:44px;">
+          <button type="button" class="add-btn" data-dish-add="${dish.id}">+</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderDishes(filter = orderCrudState.searchTerm) {
   const dishList = document.getElementById('dish-list');
   if (!dishList) return;
 
-  const normalizedFilter = String(filter || '').trim().toLowerCase();
+  orderCrudState.searchTerm = String(filter || '');
+  const normalizedFilter = orderCrudState.searchTerm.trim().toLowerCase();
+  const activeCategory = orderCrudState.activeCategory;
+
   const items = orderCrudState.menuItems.filter(dish => {
     if (!dish?.name) return false;
-    if (!normalizedFilter) return true;
-    return dish.name.toLowerCase().includes(normalizedFilter);
+    if (normalizedFilter && !dish.name.toLowerCase().includes(normalizedFilter)) return false;
+
+    if (activeCategory === 'All') return true;
+    if (activeCategory === 'Favourites') return Boolean(dish?.isFavourite);
+
+    const category = String(dish?.category || 'Uncategorized').trim() || 'Uncategorized';
+    return category === activeCategory;
   });
 
   if (!items.length) {
-    dishList.innerHTML = '<div class="muted">No dishes found.</div>';
+    dishList.innerHTML = `
+      <div class="empty-state" style="grid-column:1/-1;">
+        <div class="empty-icon">\uD83D\uDD0E</div>
+        <div class="empty-title">No items found</div>
+        <div class="empty-text">Try another search or category.</div>
+      </div>
+    `;
+    return;
+  }
+
+  if (activeCategory !== 'All') {
+    dishList.innerHTML = items.map(renderDishCard).join('');
     return;
   }
 
@@ -341,56 +456,19 @@ function renderDishes(filter = '') {
 
   const groupedByCategory = remainingItems.reduce((acc, dish) => {
     const category = String(dish?.category || 'Uncategorized').trim() || 'Uncategorized';
-    if (!acc.has(category)) {
-      acc.set(category, []);
-    }
+    if (!acc.has(category)) acc.set(category, []);
     acc.get(category).push(dish);
     return acc;
   }, new Map());
 
-  const renderDishCard = dish => {
-    const portions = [
-      { key: 'qtr', label: 'Qtr', price: dish.qtr_price },
-      { key: 'half', label: 'Half', price: dish.half_price },
-      { key: 'full', label: 'Full', price: dish.full_price }
-    ].filter(p => Number(p.price || 0) > 0);
-
-    const availablePortions = portions.length ? portions : [{ key: 'full', label: 'Full', price: 0 }];
-    const showLabels = availablePortions.length > 1;
-
-    const options = availablePortions.map(portion => (
-      `<option value="${portion.key}">${showLabels ? `${portion.label} - ` : ''}${formatCurrency(Number(portion.price || 0))}</option>`
-    )).join('');
-
-    return `
-      <div class="dish" data-dish-id="${dish.id}">
-        <img src="${getDishImageSrc(dish)}" alt="${dish.name || 'Dish'}" />
-        <h4>${dish.name || 'Unnamed dish'}</h4>
-        <div class="dish-details">
-          <select data-dish-portion="${dish.id}">
-            ${options}
-          </select>
-        </div>
-        <input type="number" data-dish-qty="${dish.id}" min="1" value="1" />
-        <div class="dish-actions">
-          <button type="button" class="add-dish-button" data-dish-add="${dish.id}">Add</button>
-        </div>
-      </div>
-    `;
-  };
-
   const favouritesSection = favouriteItems.length ? `
-    <section class="dish-category-group dish-favourites-group">
-      <h3 class="dish-category-title">Favourites</h3>
-      ${favouriteItems.map(renderDishCard).join('')}
-    </section>
+    <div class="dish-category-title">Favourites</div>
+    ${favouriteItems.map(renderDishCard).join('')}
   ` : '';
 
   const categorySections = Array.from(groupedByCategory.entries()).map(([category, categoryItems]) => `
-    <section class="dish-category-group">
-      <h3 class="dish-category-title">${category}</h3>
-      ${categoryItems.map(renderDishCard).join('')}
-    </section>
+    <div class="dish-category-title">${category}</div>
+    ${categoryItems.map(renderDishCard).join('')}
   `).join('');
 
   dishList.innerHTML = favouritesSection + categorySections;
@@ -404,6 +482,7 @@ async function loadMenuItems() {
 
   const data = await response.json();
   orderCrudState.menuItems = Array.isArray(data) ? data : [];
+  renderCategories();
   renderDishes();
 
   const menuMessage = document.getElementById('orderMenuMessage');
@@ -435,6 +514,7 @@ function resetOrderForm() {
 
 function setupOrderPage() {
   const dishList = document.getElementById('dish-list');
+  const categoryList = document.getElementById('categoryList');
   const searchInput = document.getElementById('search');
   const draftItemsContainer = document.getElementById('orderDraftItems');
   const cancelButton = document.getElementById('cancelOrderFormButton');
@@ -442,6 +522,17 @@ function setupOrderPage() {
   const orderType = document.getElementById('orderType');
   const customerPhone = document.getElementById('orderCustomerPhone');
   const carNumber = document.getElementById('orderCarNumber');
+
+  if (categoryList) {
+    categoryList.addEventListener('click', event => {
+      const button = event.target.closest('[data-category]');
+      if (!button) return;
+
+      orderCrudState.activeCategory = button.getAttribute('data-category') || 'All';
+      renderCategories();
+      renderDishes();
+    });
+  }
 
   if (orderType) {
     orderType.addEventListener('change', () => {
@@ -494,13 +585,20 @@ function setupOrderPage() {
 
   if (draftItemsContainer) {
     draftItemsContainer.addEventListener('click', event => {
-      const removeButton = event.target.closest('[data-order-action="remove-draft-item"]');
-      if (!removeButton) return;
+      const actionButton = event.target.closest('[data-order-action]');
+      if (!actionButton) return;
 
-      const menuItemId = Number(removeButton.getAttribute('data-menu-item-id') || 0);
-      const portion = removeButton.getAttribute('data-portion') || 'full';
-      removeItemFromDraft(menuItemId, portion);
-      // showSaveMessage('orderSaveMessage', 'Dish removed from draft order.');
+      const action = actionButton.getAttribute('data-order-action');
+      const menuItemId = Number(actionButton.getAttribute('data-menu-item-id') || 0);
+      const portion = actionButton.getAttribute('data-portion') || 'full';
+
+      if (action === 'remove-draft-item') {
+        removeItemFromDraft(menuItemId, portion);
+      } else if (action === 'increment-draft-item') {
+        adjustDraftItemQuantity(menuItemId, portion, 1);
+      } else if (action === 'decrement-draft-item') {
+        adjustDraftItemQuantity(menuItemId, portion, -1);
+      }
     });
   }
 
