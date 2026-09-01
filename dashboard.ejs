@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="shortcut icon" href="../images/favicon.ico">
+  </head>
+  <body data-role="<%= role %>" data-user="<%= user %>">
+   <%- include('../partials/header.ejs') %>
+    <div class="app-shell">
+      <%- include('../partials/sidebar.ejs') %>
+      <main class="main-content">
+        <div class="page-heading">Dashboard</div>
+        <div class="topbar">
+          <div>
+            <h2>Restaurant performance overview</h2>
+            <p>Live snapshot of weekly sales, cash, orders, and stock health.</p>
+          </div>
+          <div class="user-chip"><%= role %> • Today</div>
+          <div class="topbar-actions">
+            <a href="/orders/open" class="button primary">View Open Orders</a>
+            <a class="button dark" href="/orders/new">Create New Order</a>
+          </div>
+        </div>
+        <section class="grid cards">
+          <div class="card"><div class="label">Weekly Sales</div><div class="value" id="weeklySalesValue">Loading…</div><div class="hint" id="weeklySalesHint">Syncing with backend</div></div>
+          <div class="card"><div class="label">Orders Served</div><div class="value" id="orderValue">0</div><div class="hint" id="orderHint">Paid orders this week</div></div>
+          <div class="card"><div class="label">Cash In Hand Today</div><div class="value" id="cashInHandValue">Loading…</div><div class="hint" id="cashInHandHint">Today register status</div></div>
+          <div class="card"><div class="label">Total Expenses Today</div><div class="value" id="expensesValue">Loading…</div><div class="hint" id="expensesHint">Staff expenses recorded today</div></div>
+        </section>
+        <section class="row" style="margin-top: 16px;">
+          <div class="panel col chart-box">
+            <h3>Daily Sales</h3>
+            <canvas id="dashboardChart"></canvas>
+          </div>
+          <div class="panel col">
+            <h3>Inventory Health</h3>
+            <!-- <div class="chart-box inventory-chart-box">
+              <canvas id="inventoryChart"></canvas>
+            </div> -->
+            <div class="inventory-legend" id="inventoryLegend"></div>
+            <h3 style="margin-top: 14px;">Operational Pulse</h3>
+            <div class="list" id="pulseList"></div>
+          </div>
+        </section>
+      </main>
+    </div>
+    <script>
+      window.__APP_CONTEXT__ = {
+        role: "<%= role %>",
+        user: "<%= user %>",
+        restaurant: "<%= restaurant || '' %>"
+      };
+    </script>
+    <script src="/js/shared.js"></script>
+    <script src="/js/dashboard.js"></script>
+  </body>
+</html>

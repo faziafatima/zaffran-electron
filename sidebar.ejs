@@ -1,0 +1,105 @@
+<%
+  const roleKey = String(role || 'admin').toLowerCase();
+  const activePath = (currentPath || '/').replace(/\/$/, '') || '/';
+  const isPath = (p) => activePath === p;
+  const isOrdersGroupActive = activePath === '/orders' || activePath.startsWith('/orders/');
+  const isReportsGroupActive = activePath === '/reportsView' || activePath.startsWith('/reportsView/');
+
+  const fullNav = [
+    { label: 'Dashboard', path: '/dashboard', icon: '📊' },
+    {
+      label: 'Orders', icon: '🧾', group: true, active: isOrdersGroupActive,
+      children: [
+        { label: 'New Order', path: '/orders/new' },
+        { label: 'Open Orders', path: '/orders/open' },
+        { label: 'Closed Orders', path: '/orders/closed' }
+      ]
+    },
+    { label: 'Billing', path: '/billing', icon: '💳' },
+    { label: 'Master Pages', path: '/masterPages', icon: '🍽️' },
+    { label: 'Reservations', path: '/reservations', icon: '📅' },
+    { label: 'Customers', path: '/customers', icon: '👥' },
+    {
+      label: 'Reports', icon: '📈', group: true, active: isReportsGroupActive,
+      children: [
+        { label: 'Overview', path: '/reportsView' },
+        { label: 'Sales', path: '/reportsView/sales' },
+        { label: 'P&L', path: '/reportsView/pnl' },
+        { label: 'GST', path: '/reportsView/gst' },
+        { label: 'Inventory', path: '/reportsView/inventory' },
+        { label: 'Expense', path: '/reportsView/expense' },
+        { label: 'Staff Attendance', path: '/reportsView/staff-attendance' }
+      ]
+    },
+    { label: 'Day Cash', path: '/day-cash', icon: '💵' },
+    { label: 'Expenses', path: '/expenses', icon: '💸' },
+    { label: 'Attendance', path: '/attendance', icon: '🕒' },
+    { label: 'Staff', path: '/staff', icon: '🧑‍🍳' },
+    { label: 'Settings', path: '/settings', icon: '⚙️' }
+  ];
+
+  const staffNav = [
+    { label: 'Dashboard', path: '/dashboard', icon: '📊' },
+    {
+      label: 'Orders', icon: '🧾', group: true, active: isOrdersGroupActive,
+      children: [
+        { label: 'New Order', path: '/orders/new' },
+        { label: 'Open Orders', path: '/orders/open' },
+        { label: 'Closed Orders', path: '/orders/closed' }
+      ]
+    },
+    { label: 'Billing', path: '/billing', icon: '💳' }
+  ];
+
+  const navMap = {
+    'super admin': fullNav,
+    admin: fullNav,
+    manager: fullNav,
+    staff: staffNav
+  };
+  const navItems = navMap[roleKey] || fullNav;
+%>
+<aside class="sidebar" id="sidebar">
+  <div class="brand">
+    <div class="brand-badge">🍴</div>
+    <div class="brand-copy">
+      <h1><%= restaurant?.name || 'RestaurantOS' %></h1>
+      <p>Point of Sale</p>
+    </div>
+    <button type="button" class="sidebar-toggle" id="sidebarToggle" aria-label="Collapse side menu" onclick="toggleSidebarState()">≡</button>
+  </div>
+  <div class="sidebar-profile">
+    <div class="sidebar-profile-avatar"></div>
+    <div class="sidebar-profile-copy">
+      <div class="sidebar-profile-name"></div>
+      <div class="sidebar-profile-role"></div>
+    </div>
+  </div>
+  <nav class="nav-list">
+    <% navItems.forEach(item => { %>
+      <% if (item.group) { %>
+        <div class="nav-group <%= item.active ? 'expanded' : '' %>" data-nav-group>
+          <button type="button" class="nav-item nav-parent" data-nav-toggle aria-expanded="<%= item.active ? 'true' : 'false' %>">
+            <span class="nav-parent-main">
+              <span class="nav-icon"><%= item.icon %></span>
+              <span class="nav-label"><%= item.label %></span>
+            </span>
+            <span class="nav-caret">▾</span>
+          </button>
+          <div class="nav-sublist">
+            <% item.children.forEach(child => { %>
+              <a class="nav-subitem <%= isPath(child.path) ? 'active' : '' %>" href="<%= child.path %>"><%= child.label %></a>
+            <% }) %>
+          </div>
+        </div>
+      <% } else { %>
+        <div class="nav-group">
+          <a class="nav-item <%= isPath(item.path) ? 'active' : '' %>" href="<%= item.path %>">
+            <span class="nav-icon"><%= item.icon %></span>
+            <span class="nav-label"><%= item.label %></span>
+          </a>
+        </div>
+      <% } %>
+    <% }) %>
+  </nav>
+</aside>

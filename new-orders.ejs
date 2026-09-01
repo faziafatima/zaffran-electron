@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link href="/css/select2.min.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="shortcut icon" href="../images/favicon.ico">
+      <style>
+    .menu, .order-preview {
+      padding: 18px;
+      overflow-y: auto;
+      max-height: calc(100vh - 150px);
+    }
+    .menu {
+      border-right: 0;
+    }
+    .order-preview {
+      background: var(--panel-2);
+      border-radius: 14px;
+    }
+    .search-box {
+      margin-bottom: 16px;
+    }
+    .search-box input {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+    }
+    .car-order-fields {
+      margin-top: 12px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--panel);
+    }
+    .car-order-fields .order-form-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    </style>
+  </head>
+
+  <body data-role="<%= role %>" data-user="<%= user %>">
+    <%- include('../partials/header.ejs') %>
+    <div class="app-shell">
+      <%- include('../partials/sidebar.ejs') %>
+      <main class="main-content">
+        <div class="topbar orders-topbar">
+          <div>&nbsp;</div>
+          <div class="page-heading">New Orders</div>
+          <div class="topbar-actions">
+            <a href="/orders/open" class="button" style="background-color: black; color:aliceblue">View Open Orders</a>
+          </div>
+        </div>
+<section class="row-grid-orders">
+         <div class="panel col">
+         <div class="menu">
+    <div class="search-box">
+      <input type="text" id="search" placeholder="Search dishes by name..." style="width:100%; padding:8px;">
+    </div>
+    <div id="dish-list"></div>
+  </div>
+</div>
+ <div class="panel col">
+  <div class="order-preview">
+    <div class="center"><h3>Draft Order Preview</h3></div>
+     <form id="orderForm">
+          <div class="order-form-grid">
+            <div class="field"><label for="orderType">Order type</label><select id="orderType"><option value="Dine-in" selected>Dine-in</option><option value="Takeaway">Takeaway</option><option value="car">Car</option></select></div>
+            <div class="field"><label for="orderTableId">Table</label>
+            <select id="orderTableId" class="select2-js">
+              <option value="0">No Table</option>
+              <option value="1" selected>Table 1</option>
+              <option value="2">Table 2</option>
+              <option value="3">Table 3</option>
+              <option value="4">Table 4</option>
+              <option value="5">Table 5</option>
+              <option value="6">Table 6</option>
+              <option value="7">Table 7</option>
+              <option value="8">Table 8</option>
+              <option value="9">Table 9</option>
+              <option value="10">Table 10</option>
+              <option value="11">Table 11</option>
+              <option value="12">Table 12</option>
+              <option value="13">Table 13</option>
+              <option value="14">Table 14</option>
+              <option value="15">Table 15</option>
+              <option value="16">Table 16</option>
+              <option value="17">Table 17</option>
+              <option value="18">Table 18</option>
+              <option value="19">Table 19</option>
+              <option value="20">Table 20</option>
+              <option value="21">Table 21</option>
+              <option value="22">Table 22</option>
+              <option value="23">Table 23</option>
+              <option value="24">Table 24</option>
+              <option value="25">Table 25</option>
+            </select>
+            </div>
+            <div class="field"><label for="orderStatus">Status</label><select id="orderStatus"><option selected>Pending</option><option>Preparing</option><option>Ready</option><option>Served</option><option>Cancelled</option></select></div>
+            <!-- <div class="field"><label for="orderCreatedBy">Created by</label><select id="orderCreatedBy" required></select></div>
+            <div class="field"><label for="orderCustomerId">Customer</label><select id="orderCustomerId" required></select></div> -->
+            <div class="field"><label for="orderAmount">Subtotal</label><input id="orderAmount" type="number" step="0.01" min="0" value="0" readonly /></div>
+            <div class="field"><label for="serverName">Server Name</label><input id="serverName" type="text" /></div>
+          </div>
+          <div class="car-order-fields" id="carOrderFields" hidden>
+            <div class="order-form-grid">
+              <div class="field" id="orderCarNumberField">
+                <label for="orderCarNumber">Car Number</label>
+                <input id="orderCarNumber" type="text" />
+              </div>
+              <div class="field">
+                <label for="orderCustomerPhone">Mobile Number</label>
+                <input id="orderCustomerPhone" type="text" />
+              </div>
+              <div class="field">
+                <label for="orderCustomerName">Customer Name</label>
+                <input id="orderCustomerName" type="text" />
+              </div>
+            </div>
+            <input id="orderCustomerId" type="hidden" />
+            <p class="muted" id="orderCustomerLookupMessage"></p>
+          </div>
+          <div class="order-builder">
+            <div class="section-head order-builder-head">
+              <div>
+                <h4>Dishes</h4>
+              </div>
+            </div>
+            <div class="order-items" id="orderDraftItems"></div>
+            <p class="muted order-builder-note" id="orderSelectedPrice"></p>
+            <p class="muted order-builder-note" id="orderMenuMessage"></p>
+          </div>
+          <div class="modal-actions">
+            <button type="submit">Create Order</button>
+            <button class="ghost-button" type="button" id="cancelOrderFormButton">Clear</button>
+          </div>
+          <!-- <p class="muted">Submitting will generate the final receipt and forward it to the configured POS machine.</p> -->
+          <p class="muted" id="orderSaveMessage"></p>
+        </form>
+
+
+
+
+
+    
+    <div class="order-total">Total: ₹<span id="order-total">0</span></div>
+  </div>
+  </div>
+  </section>
+      </main>
+    </div>
+    <script src="/js/jquery.min.js"></script>
+    <script src="/js/select2.min.js"></script>
+    <script src="/js/shared.js"></script>
+    <script src="/js/new-orders.js"></script>
+    <script>
+       const orderType = document.getElementById('orderType');
+       const orderTableId = document.getElementById('orderTableId');
+
+       if (orderType) {
+         orderType.addEventListener('change', () => {
+           if (isCarOrderSelected() || isTakeawayOrderSelected()) {
+             orderTableId.value = "0";
+             $('#orderTableId').val('0');
+             $('#orderTableId').trigger('change');
+           } else {
+             orderTableId.value = "1";
+             $('#orderTableId').val('1');
+             $('#orderTableId').trigger('change');
+           }
+         });
+       }
+        </script>
+  </body>
+</html>
