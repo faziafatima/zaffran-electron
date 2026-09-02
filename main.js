@@ -1,4 +1,5 @@
-const { app: electronApp, BrowserWindow, ipcMain } = require('electron');
+const { app: electronApp, BrowserWindow, ipcMain,dialog  } = require('electron');
+const { autoUpdater } = require('electron-updater');
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
@@ -15,7 +16,15 @@ function resolveBackendBase() {
 
 function readConfiguredBackendUrl() {
   try {
-    const config = JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json'), 'utf8'));
+
+    const config = {
+            "development": {
+              "backendUrl": "http://localhost:8080"
+            },
+            "production": {
+              "backendUrl": "http://thezaffran.in:8080"
+            }
+          }
     const env = electronApp.isPackaged ? 'production' : 'development';
     if (config[env]?.backendUrl) {
       return config[env].backendUrl;
@@ -365,6 +374,7 @@ function createWindow() {
     console.log(`Preload bridge available in renderer: ${isPreloadLoaded}`);
   });
   win.loadURL(`http://localhost:${port}/login`);
+
 }
 
 // Start Express, then Electron
@@ -466,41 +476,6 @@ ipcMain.on('print-receipt', async (event, data) => {
         }
 
         const finalBuffer = await convertReceiptToBuffer(data);
-
-        // // 3. Define standard ESC/POS hexadecimal command markers
-        // const initPrinter = Buffer.from([0x1B, 0x40]);            // ESC @ (Initialize)
-        // const centerAlign = Buffer.from([0x1B, 0x61, 0x01]);        // ESC a 1 (Center Align)
-        // const leftAlign   = Buffer.from([0x1B, 0x61, 0x00]);        // ESC a 0 (Left Align)
-        // const boldOn      = Buffer.from([0x1B, 0x45, 0x01]);        // ESC E 1 (Bold On)
-        // const boldOff     = Buffer.from([0x1B, 0x45, 0x00]);        // ESC E 0 (Bold Off)
-        // const cutPaper    = Buffer.from([0x1D, 0x56, 0x42, 0x00]);   // GS V 66 0 (Feed and Cut)
-        
-        // // 4. Build receipt string text data blocks
-        // let textContent = '';
-        // textContent += 'Bluetooth Connection Active\n';
-        // textContent += '--------------------------------\n';
-        // textContent += 'Item Description       Price\n';
-        // textContent += 'Thermal Receipt Paper  $10.00\n';
-        // textContent += '--------------------------------\n';
-        // textContent += 'Total Paid:            $10.00\n\n';
-        // textContent += '  Barcode Placeholder: 12345678 \n\n';
-        
-        // // 5. Add lines of blank feeds so data rolls past the cutter blade edge
-        // textContent += '\n\n\n'; 
-        
-        // // 6. Merge the layout command flags and string fragments together
-        // const finalBuffer = Buffer.concat([
-        //     initPrinter,
-        //     centerAlign,
-        //     boldOn,
-        //     Buffer.from('STORE RECEIPT\n\n'),
-        //     boldOff,
-        //     leftAlign,
-        //     Buffer.from(textContent),
-        //     cutPaper
-        // ]);
-
-        // 7. Convert the Node Buffer into a Uint8Array array layout required by Rust
         const printData = new Uint8Array(finalBuffer);
 
         console.log(`Dispatching buffer stream to printer queue: ${PRINTER_NAME}...`);
@@ -515,4 +490,39 @@ ipcMain.on('print-receipt', async (event, data) => {
         event.reply('print-receipt-result', { success: false, message: error.message || 'Print failed' });
     }
 
+});
+
+
+
+
+// Optional: Customize update behavior and notifications
+autoUpdater.on('update-available', () => {
+  console.log('New version found on server. Downloading in background...');
+});
+
+autoUpdater.on('update-downloaded', (info) => {
+  // Notify the user that the update is ready
+   console.log('Update downloaded successfully.');
+  // dialog.showMessageBox({
+  //   type: 'info',
+  //   title: 'Update Ready',
+  //   message: `Version ${info.version} has been downloaded and is ready to install!`,
+  //   buttons: ['Restart Now', 'Later']
+  // }).then((result) => {
+  //   // If they clicked "Restart Now", close app and install
+  //   if (result.response === 0) {
+  //     autoUpdater.quitAndInstall();
+  //   }
+  // });
+});
+autoUpdater.autoInstallOnAppQuit = true;
+autoUpdater.on('error', (err) => {
+  console.error('Error during update check:', err);
+});
+
+// Trigger an initial update check when the app is ready
+electronApp.on('ready', () => {
+   // 1. Check for updates as soon as the app opens
+  autoUpdater.checkForUpdatesAndNotify();
+  console.log(`Current app version: ${electronApp.getVersion()}`);
 });

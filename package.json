@@ -1,19 +1,21 @@
 {
-  "name": "nodejs-desktop-app",
+  "name": "zaffran-desktop-app",
   "version": "1.0.0",
-  "description": "",
+  "description": "Desktop application for Zaffran Restaurant",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
+    "build": "electron-builder",
     "clean": "rm -rf dist node_modules package-lock.json && npm install",
     "package": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\" && electron-packager . ElectronApp --platform=win32 --arch=x64 --out=dist --icon=resources/icon.ico",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "author": "",
+  "author": "Fazia Fatima",
   "license": "ISC",
   "devDependencies": {
     "electron": "^43.4.1",
+    "electron-builder": "^26.15.3",
     "electron-packager": "^17.1.2",
     "png-to-ico": "^3.0.2"
   },
@@ -21,8 +23,31 @@
     "@printers/printers": "^2.0.0",
     "axios": "^1.19.0",
     "ejs": "^6.0.1",
+    "electron-updater": "^6.8.9",
     "express": "^5.2.1",
     "express-session": "^1.19.0",
     "sharp": "^0.35.4"
+  },
+  "repository": "https://github.com/faziafatima/zaffran-releases",
+  "publish": {
+    "provider": "github",
+    "releaseType": "release"
+  },
+    "build": {
+    "appId": "in.thezaffran.desktopapp",
+    "productName": "Zaffran Desktop App",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "icon": "resources/icon.ico",
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": true,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "runAfterFinish": true
+    }
   }
 }
