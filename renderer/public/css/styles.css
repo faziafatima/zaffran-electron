@@ -2170,7 +2170,7 @@ body {
 
 /* ---- Top header bar (partials/header.ejs) ---- */
 
-.brand h1 a { color: var(--text); font-weight: 750; }
+.brand h1 a { color: var(--text); font-weight: 750; font-size: 12px;}
 .user-menu #username, .restaurant-menu #restaurant-select {
   font-weight: 650;
   color: var(--text);

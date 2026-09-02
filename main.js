@@ -2,7 +2,7 @@ const { app: electronApp, BrowserWindow, ipcMain,dialog  } = require('electron')
 const { autoUpdater } = require('electron-updater');
 const express = require('express');
 const path = require('path');
-const fs = require('fs');
+// const fs = require('fs');
 const session = require('express-session');
 const axios = require('axios');
 const { getPrinterByName  } = require('@printers/printers');
@@ -371,12 +371,15 @@ let mainWindow = null;
 
 function createWindow() {
   console.log('Creating main application window...');
-  console.log(path.join(__dirname, 'preload.js'));
+  // console.log(path.join(__dirname, 'preload.js'));
+  
+  const isDev = !electronApp.isPackaged; 
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
+      devTools: isDev, 
       contextIsolation: true,
       partition: 'persist:restaurantos' // ensures cookies persist
     }
@@ -390,6 +393,12 @@ function createWindow() {
     console.log(`Preload bridge available in renderer: ${isPreloadLoaded}`);
   });
   win.loadURL(`http://localhost:${port}/login`);
+
+  if (!isDev) {
+    mainWindow.webContents.on('devtools-opened', () => {
+      mainWindow.webContents.closeDevTools();
+    });
+  }
 
 }
 

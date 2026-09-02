@@ -5,8 +5,9 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder",
-    "clean": "rm -rf dist node_modules package-lock.json && npm install",
+    "build": "rm -rf dist && electron-builder",
+    "clean": "rm -rf dist",
+    "deepclean": "rm -rf dist node_modules package-lock.json && npm install",
     "package": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\" && electron-packager . ElectronApp --platform=win32 --arch=x64 --out=dist --icon=resources/icon.ico",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
