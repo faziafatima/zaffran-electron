@@ -2472,3 +2472,7 @@ button.secondary:hover, .ghost-button:hover { background: #f8fafc; }
   .cart-actions { grid-template-columns: 1fr; }
 }
 
+.app-version {
+    font-size: 10px;
+    float: right;
+}

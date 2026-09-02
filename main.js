@@ -7,6 +7,22 @@ const session = require('express-session');
 const axios = require('axios');
 const { getPrinterByName  } = require('@printers/printers');
 const sharp = require('sharp');
+const log = require('electron-log');
+
+
+
+// Logger functions
+// --- Configure the Logger ---
+// 1. Set the maximum log file size (in bytes). Here it's 5MB. 
+// When it hits 5MB, it renames to main.old.log and starts a new one.
+log.transports.file.maxSize = 10 * 1024 * 1024;
+log.transports.file.resolvePathFn = () => path.join(electronApp.getPath('documents'), 'TheZaffranApp', 'logs', 'application.log');
+
+// 2. Optional: Customize the log message format
+log.transports.file.format = '[{y}-{m}-{d} {h}:{i}:{s}.{ms}] [{level}] {text}';
+
+// 3. Optional: Assign console functions so standard console.log also writes to file
+Object.assign(console, log.functions);
 
 function resolveBackendBase() {
   const raw = process.env.BACKEND_URL || readConfiguredBackendUrl();
@@ -525,4 +541,19 @@ electronApp.on('ready', () => {
    // 1. Check for updates as soon as the app opens
   autoUpdater.checkForUpdatesAndNotify();
   console.log(`Current app version: ${electronApp.getVersion()}`);
+});
+
+
+// Catch unexpected errors and write them to the file
+process.on('uncaughtException', (error) => {
+  log.error('Uncaught Exception in Main Process:', error);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  log.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+
+ipcMain.handle('get-app-version', () => {
+  return electronApp.getVersion(); 
 });

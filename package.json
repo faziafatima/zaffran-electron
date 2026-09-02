@@ -1,6 +1,6 @@
 {
   "name": "zaffran-desktop-app",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Desktop application for Zaffran Restaurant",
   "main": "main.js",
   "scripts": {
@@ -23,6 +23,7 @@
     "@printers/printers": "^2.0.0",
     "axios": "^1.19.0",
     "ejs": "^6.0.1",
+    "electron-log": "^5.4.4",
     "electron-updater": "^6.8.9",
     "express": "^5.2.1",
     "express-session": "^1.19.0",
@@ -33,9 +34,9 @@
     "provider": "github",
     "releaseType": "release"
   },
-    "build": {
+  "build": {
     "appId": "in.thezaffran.desktopapp",
-    "productName": "Zaffran Desktop App",
+    "productName": "TheZaffranApp",
     "directories": {
       "output": "dist"
     },
