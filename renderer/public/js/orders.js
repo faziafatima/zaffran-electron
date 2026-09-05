@@ -1,8 +1,6 @@
 const orderCrudState = {
   items: [],
-  editingId: null,
   menuItems: [],
-  draftItems: [],
   closingId: null,
   discounts: [],
   kotPreviewId: null,
@@ -19,162 +17,6 @@ const KOT_PRINT_STATE_KEY = 'zaffaran.kot.printHistory.v1';
 
 function trimValue(value) {
   return String(value || '').trim();
-}
-
-function isOrderCarSelected() {
-  const orderType = String(document.getElementById('orderType')?.value || '').trim().toLowerCase();
-  return orderType === 'car';
-}
-
-function isOrderTakeawaySelected() {
-  const orderType = String(document.getElementById('orderType')?.value || '').trim().toLowerCase();
-  return orderType === 'takeaway';
-}
-
-function shouldCaptureOrderCustomerDetails() {
-  return isOrderCarSelected() || isOrderTakeawaySelected();
-}
-
-function setOrderCustomerMessage(message, isError = false) {
-  showSaveMessage('orderCustomerLookupMessage', message, isError);
-}
-
-function normalizeOrderCarNumber(value) {
-  return String(value || '').trim().toUpperCase();
-}
-
-function setOrderCustomerFieldsVisibility() {
-  const shell = document.getElementById('orderCustomerFields');
-  const carField = document.getElementById('orderCarNumberField');
-  const carInput = document.getElementById('orderCarNumber');
-  const phoneInput = document.getElementById('orderCustomerPhone');
-  const nameInput = document.getElementById('orderCustomerName');
-  const customerId = document.getElementById('orderCustomerId');
-
-  const visible = shouldCaptureOrderCustomerDetails();
-  const showCarField = isOrderCarSelected();
-
-  if (shell) shell.hidden = !visible;
-  if (carField) {
-    carField.hidden = !showCarField;
-    carField.style.display = showCarField ? '' : 'none';
-  }
-
-  if (!carInput || !phoneInput || !nameInput) return;
-
-  carInput.required = showCarField;
-  // phoneInput.required = visible;
-  // nameInput.required = visible;
-
-  if (!showCarField) {
-    carInput.value = '';
-  }
-
-  if (!visible) {
-    if (customerId) customerId.value = '';
-    phoneInput.value = '';
-    nameInput.value = '';
-    setOrderCustomerMessage('');
-  }
-}
-
-function applyOrderResolvedCustomer(customer) {
-  const idInput = document.getElementById('orderCustomerId');
-  const phoneInput = document.getElementById('orderCustomerPhone');
-  const nameInput = document.getElementById('orderCustomerName');
-  const carInput = document.getElementById('orderCarNumber');
-
-  if (idInput) idInput.value = customer?.id ? String(customer.id) : '';
-  if (phoneInput && customer?.phone) phoneInput.value = customer.phone;
-  if (nameInput) nameInput.value = customer?.name || '';
-  if (carInput && customer?.carNumber) carInput.value = customer.carNumber;
-}
-
-async function lookupOrderCustomerByIdentifier() {
-  if (!shouldCaptureOrderCustomerDetails()) return null;
-
-  const phone = trimValue(document.getElementById('orderCustomerPhone')?.value);
-  const carNumber = normalizeOrderCarNumber(document.getElementById('orderCarNumber')?.value);
-  const idInput = document.getElementById('orderCustomerId');
-
-  if (!phone && !carNumber) {
-    if (idInput) idInput.value = '';
-    setOrderCustomerMessage('');
-    return null;
-  }
-
-  const params = new URLSearchParams();
-  if (phone) params.set('phone', phone);
-  if (carNumber) params.set('carNumber', carNumber);
-
-  try {
-    const response = await fetch(`/api/customers/search?${params.toString()}`);
-    if (response.status === 404) {
-      if (idInput) idInput.value = '';
-      setOrderCustomerMessage('No customer found. Enter details to create one.');
-      return null;
-    }
-
-    if (!response.ok) {
-      throw new Error(`Customer lookup failed with status ${response.status}`);
-    }
-
-    const customer = await response.json();
-    applyOrderResolvedCustomer(customer);
-    setOrderCustomerMessage('Customer details loaded from existing profile.');
-    return customer;
-  } catch (error) {
-    setOrderCustomerMessage(error.message || 'Customer lookup failed.', true);
-    return null;
-  }
-}
-
-async function resolveCustomerForOrder(defaultCustomerId = 0) {
-  if (!shouldCaptureOrderCustomerDetails()) return Number(defaultCustomerId || 0);
-
-  const phone = trimValue(document.getElementById('orderCustomerPhone')?.value);
-  const name = trimValue(document.getElementById('orderCustomerName')?.value);
-  const carInput = document.getElementById('orderCarNumber');
-  const carNumber = normalizeOrderCarNumber(carInput?.value);
-
-  if (!name && !phone) {
-    return;
-  }
-  // if (!phone) {
-  //   throw new Error('Mobile number is required for takeaway and car orders.');
-  // }
-  if (isOrderCarSelected() && !carNumber) {
-    throw new Error('Car number is required for car orders.');
-  }
-
-  if (carInput) {
-    carInput.value = isOrderCarSelected() ? carNumber : '';
-  }
-
-  const response = await fetch('/api/customers/resolve', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      phone,
-      name,
-      carNumber: isOrderCarSelected() ? carNumber : ''
-    })
-  });
-
-  let responseBody = null;
-  try {
-    responseBody = await response.json();
-  } catch (error) {
-    responseBody = null;
-  }
-
-  if (!response.ok) {
-    throw new Error(responseBody?.message || `Customer resolve failed with status ${response.status}`);
-  }
-
-  applyOrderResolvedCustomer(responseBody);
-  setOrderCustomerMessage('Customer details attached to this order.');
-  return Number(responseBody?.id || defaultCustomerId || 0);
 }
 
 function setCloseOrderCustomerMessage(message, isError = false) {
@@ -821,89 +663,6 @@ function getCloseOrderOnSpotDiscount() {
   return Number(document.getElementById('closeOrderOnSpotDiscount')?.value || 0);
 }
 
-function renderMenuOptionsMarkup() {
-  if (!orderCrudState.menuItems.length) {
-    return '<option value="">No dishes available</option>';
-  }
-
-  return orderCrudState.menuItems.map(menuItem => {
-    const price = formatCurrency(getMenuItemPrice(menuItem));
-    return `<option value="${menuItem.id}">${menuItem.name || `Dish #${menuItem.id}`}</option>`;
-  }).join('');
-}
-
-function buildMenuOptions() {
-  const menuSelect = document.getElementById('orderMenuItemId');
-  const menuMessage = document.getElementById('orderMenuMessage');
-  if (!menuSelect) return;
-
-  // menuSelect.innerHTML = renderMenuOptionsMarkup();
-  menuSelect.disabled = !orderCrudState.menuItems.length;
-
-  const dishSelect = $('#orderMenuItemId');
-
-  // Clear existing options
-  dishSelect.empty();
-
-  // Populate from array
-    orderCrudState.menuItems.forEach(item => {
-    const option = new Option(item.name, item.id, false, false);
-    dishSelect.append(option);
-  });
-
-  // Activate Select2
-  dishSelect.select2();
-
-  if (menuMessage) {
-    menuMessage.textContent = orderCrudState.menuItems.length ? '' : 'Load menu items first before adding dishes.';
-  }
-
-  updateDraftPriceHint();
-}
-
-function getSelectedPortion(orderId = null) {
-  if (orderId === null) {
-    const selected = document.querySelector('input[name="orderPortion"]:checked');
-    return normalizePortion(selected?.value);
-  }
-
-  const selected = document.querySelector(`input[name="orderPortion-${orderId}"]:checked`);
-  return normalizePortion(selected?.value);
-}
-
-function updateDraftPriceHint() {
-  const priceHint = document.getElementById('orderSelectedPrice');
-  const menuSelect = document.getElementById('orderMenuItemId');
-  if (!priceHint || !menuSelect) return;
-
-  const menuItem = getMenuItemById(menuSelect.value);
-  if (!menuItem) {
-    priceHint.textContent = '';
-    return;
-  }
-
-  const portion = getSelectedPortion();
-  const portionPrice = getMenuItemPriceByPortion(menuItem, portion);
-  priceHint.textContent = `${getPortionLabel(portion)} portion price: ${formatCurrency(portionPrice)}`;
-}
-
-function updateInlinePriceHint(orderId) {
-  const hint = document.querySelector(`[data-order-price-hint="${orderId}"]`);
-  const menuSelect = document.querySelector(`[data-order-menu-select="${orderId}"]`);
-  if (!hint || !menuSelect) return;
-
-  const menuItem = getMenuItemById(menuSelect.value);
-  if (!menuItem) {
-    hint.textContent = '';
-    return;
-  }
-
-  const portion = getSelectedPortion(orderId);
-  const portionPrice = getMenuItemPriceByPortion(menuItem, portion);
-  hint.textContent = `${getPortionLabel(portion)}: ${formatCurrency(portionPrice)}`;
-}
-
-
 function renderOrderItemsViewTable(items, options = {}) {
   const emptyMessage = options.emptyMessage || 'No dishes added yet.';
   if (!items.length) {
@@ -919,106 +678,6 @@ function renderOrderItemsViewTable(items, options = {}) {
   `).join('');
 }
 
-
-function renderOrderItems(items, options = {}) {
-  const emptyMessage = options.emptyMessage || 'No dishes added yet.';
-  const orderId = options.orderId ?? null;
-  const allowRemove = Boolean(options.allowRemove);
-
-  if (!items.length) {
-    return `<div class="order-empty">${emptyMessage}</div>`;
-  }
-
-  return items.map(item => `
-    <div class="order-item-row">
-      <div>
-        <strong>${item.quantity} x ${item.name}</strong>
-        <div class="muted">${getPortionLabel(item.portion)} • ${formatCurrency(item.price)} each</div>
-      </div>
-      <div class="order-item-row-actions">
-        <div class="btn-group">
-        ${allowRemove && orderId !== null ? `<button type="button" class="menu-action-btn minus" data-order-action="${orderId === 'draft' ? 'decrement-draft-item' : 'decrement-item'}" data-order-id="${orderId}" data-menu-item-id="${item.menuItemId}" data-portion="${item.portion}">-</button>` : ''}
-        ${allowRemove && orderId !== null ? `<button type="button" class="menu-action-btn plus" data-order-action="${orderId === 'draft' ? 'add-draft-item' : 'increment-item'}" data-order-id="${orderId}" data-menu-item-id="${item.menuItemId}" data-portion="${item.portion}">+</button>` : ''}
-       
-        </div>
-        
-         <strong>${formatCurrency(item.price * item.quantity)}</strong>
-      </div>
-    </div>
-  `).join('');
-}
-
-function getMenuItemById(menuItemId) {
-  return orderCrudState.menuItems.find(item => Number(item.id) === Number(menuItemId));
-}
-
-function addItemToCollection(items, menuItemId, quantity, portion) {
-  const menuItem = getMenuItemById(menuItemId);
-  if (!menuItem) return null;
-
-  const nextItems = items.map(item => ({ ...item }));
-  const normalizedPortion = normalizePortion(portion);
-  const existing = nextItems.find(item => Number(item.menuItemId) === Number(menuItemId) && normalizePortion(item.portion) === normalizedPortion);
-  const normalizedQuantity = Math.max(1, Number(quantity || 1));
-  const price = getMenuItemPriceByPortion(menuItem, normalizedPortion);
-
-  if (existing) {
-    existing.quantity += normalizedQuantity;
-  } else {
-    nextItems.push({
-      menuItemId: Number(menuItem.id),
-      name: menuItem.name || `Dish #${menuItem.id}`,
-      quantity: normalizedQuantity,
-      portion: normalizedPortion,
-      price,
-      kitchenType: normalizeKitchenType(menuItem.kitchen_type)
-    });
-  }
-
-  return nextItems;
-}
-
-function removeItemFromCollection(items, menuItemId, portion = null) {
-  const normalizedPortion = portion === null ? null : normalizePortion(portion);
-  return items.filter(item => {
-    if (Number(item.menuItemId) !== Number(menuItemId)) return true;
-    if (normalizedPortion === null) return false;
-    return normalizePortion(item.portion) !== normalizedPortion;
-  });
-}
-
-// Decrements quantity by 1; drops the line entirely once it would hit 0.
-function decrementItemInCollection(items, menuItemId, portion) {
-  const normalizedPortion = normalizePortion(portion);
-  const nextItems = items.map(item => ({ ...item }));
-  const existing = nextItems.find(item => Number(item.menuItemId) === Number(menuItemId) && normalizePortion(item.portion) === normalizedPortion);
-  if (!existing) return nextItems;
-
-  existing.quantity -= 1;
-  if (existing.quantity <= 0) {
-    return nextItems.filter(item => item !== existing);
-  }
-
-  return nextItems;
-}
-
-function updateOrderAmountField(items) {
-  const amount = document.getElementById('orderAmount');
-  if (!amount) return;
-  amount.value = sumOrderItems(items).toFixed(0);
-}
-
-function renderDraftItems(items) {
-  const container = document.getElementById('orderDraftItems');
-  if (!container) return;
-  container.innerHTML = renderOrderItems(items, { orderId: 'draft', allowRemove: true, emptyMessage: 'Add dishes to build this order.' });
-  updateOrderAmountField(items);
-}
-
-function setDraftItems(items) {
-  orderCrudState.draftItems = Array.isArray(items) ? items : [];
-  renderDraftItems(orderCrudState.draftItems);
-}
 
 function buildOrderPayload(baseOrder, items) {
   const orderItems = Array.isArray(items) ? items : [];
@@ -1061,18 +720,10 @@ async function loadMenuItems() {
   const response = await fetch(`/api/menu/${headerRestaurantId}`);
   const data = await response.json();
   orderCrudState.menuItems = Array.isArray(data) ? data : [];
-  buildMenuOptions();
 
   if (orderCrudState.items.length) {
     renderOrdersCards(orderCrudState.items);
   }
-}
-
-function setOrderFormMode(isEdit) {
-  const title = document.getElementById('orderModalTitle');
-  const submitButton = document.querySelector('#orderForm button[type="submit"]');
-  if (title) title.textContent = isEdit ? 'Edit order' : 'New order';
-  if (submitButton) submitButton.textContent = isEdit ? 'Update Order' : 'Create Order';
 }
 
 function resetCloseOrderForm() {
@@ -1293,27 +944,6 @@ function openCloseOrderModal(id) {
   toggleModal('closeOrderModal', 'closeOrderModalBackdrop', true);
 }
 
-function resetOrderForm() {
-  const form = document.getElementById('orderForm');
-  if (form) form.reset();
-
-  const orderCustomerId = document.getElementById('orderCustomerId');
-  const orderCustomerPhone = document.getElementById('orderCustomerPhone');
-  const orderCustomerName = document.getElementById('orderCustomerName');
-  const orderCarNumber = document.getElementById('orderCarNumber');
-  if (orderCustomerId) orderCustomerId.value = '';
-  if (orderCustomerPhone) orderCustomerPhone.value = '';
-  if (orderCustomerName) orderCustomerName.value = '';
-  if (orderCarNumber) orderCarNumber.value = '';
-
-  orderCrudState.editingId = null;
-  setDraftItems([]);
-  setOrderFormMode(false);
-  setOrderCustomerFieldsVisibility();
-  setOrderCustomerMessage('');
-  showSaveMessage('orderSaveMessage', '');
-}
-
 async function loadOrders() {
   const res = await fetch(`/api/orders/openOrders/${headerRestaurantId}`);
   const data = await res.json();
@@ -1329,8 +959,6 @@ function renderOrdersCards(items) {
     body.innerHTML = '<div class="empty-state order-empty-card">No orders have been posted yet.</div>';
     return;
   }
-
-  const menuOptions = renderMenuOptionsMarkup();
 
   body.innerHTML = items.map(order => {
     const orderItems = normalizeOrderItems(order);
@@ -1377,44 +1005,6 @@ function renderOrdersCards(items) {
       </article>
     `;
   }).join('');
-
-  items.forEach(order => updateInlinePriceHint(order.id));
-}
-
-function openOrderForEdit(id) {
-  const order = orderCrudState.items.find(item => Number(item.id) === Number(id));
-  if (!order) return;
-
-  orderCrudState.editingId = order.id;
-  setOrderFormMode(true);
-
-  const table = document.getElementById('orderTableId');
-  const amount = document.getElementById('orderAmount');
-  const status = document.getElementById('orderStatus');
-  const type = document.getElementById('orderType');
-  const serverName = document.getElementById('serverName');
-  const createdBy = document.getElementById('orderCreatedBy');
-  const customer = document.getElementById('orderCustomerId');
-  const customerPhone = document.getElementById('orderCustomerPhone');
-  const customerName = document.getElementById('orderCustomerName');
-  const carNumber = document.getElementById('orderCarNumber');
-
-  if (table) table.value = order.tableId ?? 1;
-  if (amount) amount.value = Number(order.item_price || 0).toFixed(0);
-  if (status) status.value = order.status || 'Pending';
-  if (type) type.value = order.order_type || 'Dine-in';
-  if (serverName) serverName.value = order.server_name || '';
-  if (createdBy && order.createdBy?.id) createdBy.value = String(order.createdBy.id);
-  if (customer && order.customer?.id) customer.value = String(order.customer.id);
-  if (customerPhone) customerPhone.value = order.customer?.phone || '';
-  if (customerName) customerName.value = order.customer?.name || '';
-  if (carNumber) carNumber.value = order.customer?.carNumber || '';
-
-  setOrderCustomerFieldsVisibility();
-  setOrderCustomerMessage('');
-
-  setDraftItems(normalizeOrderItems(order));
-  toggleModal('orderModal', 'orderModalBackdrop', true);
 }
 
 async function removeOrder(id) {
@@ -1646,139 +1236,8 @@ window.electronAPI.printReceipt(receipt);
   // }, 250);
 }
 
-function buildFormBaseOrder() {
-  return {
-    tableId: Number(document.getElementById('orderTableId')?.value || 0),
-    order_type: document.getElementById('orderType')?.value || 'Dine-in',
-    status: document.getElementById('orderStatus')?.value || 'Pending',
-    server_name: document.getElementById('serverName')?.value || '',
-    tax_percentage: 5,
-    discount_perc: 0,
-    discount_amount: 0,
-    isSplitBill: 0,
-    payment_mode: 'cash'
-  };
-}
-
-async function persistOrder(order, items) {
-  const isEdit = order?.id !== null && order?.id !== undefined;
-  const payload = buildOrderPayload(order, items);
-  const url = isEdit ? `/api/orders/${order.id}` : `/api/orders/${headerRestaurantId}`;
-  const method = isEdit ? 'PUT' : 'POST';
-
-  const response = await fetch(url, {
-    method,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  });
-
-  if (!response.ok) {
-    throw new Error(`Save failed with status ${response.status}`);
-  }
-
-  return response.json();
-}
-
-function getCurrentDraftItems() {
-  return Array.isArray(orderCrudState.draftItems) ? orderCrudState.draftItems : [];
-}
-
-// Draft edits only live in memory until the form is submitted; when editing an
-// already-existing order, push each +/- change straight to the backend too so
-// the order itself reflects the new quantity right away, not just the UI.
-async function persistDraftItemsIfEditing(items) {
-  if (orderCrudState.editingId === null || orderCrudState.editingId === undefined) return;
-
-  const order = orderCrudState.items.find(item => Number(item.id) === Number(orderCrudState.editingId));
-  const baseOrder = { ...(order || {}), ...buildFormBaseOrder() };
-
-  try {
-    await persistOrder({ ...baseOrder, id: orderCrudState.editingId }, items);
-    await loadOrders();
-  } catch (error) {
-    showSaveMessage('orderSaveMessage', error.message, true);
-  }
-}
-
-async function addDishToInlineOrder(orderId) {
-  const order = orderCrudState.items.find(item => Number(item.id) === Number(orderId));
-  if (!order) return;
-
-  const select = document.querySelector(`[data-order-menu-select="${orderId}"]`);
-  const quantityInput = document.querySelector(`[data-order-quantity="${orderId}"]`);
-  const menuItemId = Number(select?.value || 0);
-  const quantity = Number(quantityInput?.value || 1);
-  const portion = getSelectedPortion(orderId);
-
-  const items = addItemToCollection(normalizeOrderItems(order), menuItemId, quantity, portion);
-  if (!items) {
-    showSaveMessage('orderSaveMessage', 'Select a dish before adding it to the order.', true);
-    return;
-  }
-
-  try {
-    await persistOrder(order, items);
-    showSaveMessage('orderSaveMessage', 'Dish added to order successfully.');
-    await loadOrders();
-  } catch (error) {
-    showSaveMessage('orderSaveMessage', error.message, true);
-  }
-}
-
-async function removeDishFromInlineOrder(orderId, menuItemId, portion) {
-  const order = orderCrudState.items.find(item => Number(item.id) === Number(orderId));
-  if (!order) return;
-
-  const items = removeItemFromCollection(normalizeOrderItems(order), menuItemId, portion);
-
-  try {
-    await persistOrder(order, items);
-    showSaveMessage('orderSaveMessage', 'Dish removed from order successfully.');
-    await loadOrders();
-  } catch (error) {
-    showSaveMessage('orderSaveMessage', error.message, true);
-  }
-}
-
-async function incrementDishInInlineOrder(orderId, menuItemId, portion) {
-  const order = orderCrudState.items.find(item => Number(item.id) === Number(orderId));
-  if (!order) return;
-
-  const items = addItemToCollection(normalizeOrderItems(order), menuItemId, 1, portion);
-  if (!items) return;
-
-  try {
-    await persistOrder(order, items);
-    showSaveMessage('orderSaveMessage', 'Dish quantity increased.');
-    await loadOrders();
-  } catch (error) {
-    showSaveMessage('orderSaveMessage', error.message, true);
-  }
-}
-
-async function decrementDishInInlineOrder(orderId, menuItemId, portion) {
-  const order = orderCrudState.items.find(item => Number(item.id) === Number(orderId));
-  if (!order) return;
-
-  const items = decrementItemInCollection(normalizeOrderItems(order), menuItemId, portion);
-
-  try {
-    await persistOrder(order, items);
-    showSaveMessage('orderSaveMessage', 'Dish quantity decreased.');
-    await loadOrders();
-  } catch (error) {
-    showSaveMessage('orderSaveMessage', error.message, true);
-  }
-}
-
 function setupOrderCrud() {
-  const form = document.getElementById('orderForm');
   const body = document.getElementById('ordersGrid');
-  const draftItemsContainer = document.getElementById('orderDraftItems');
-  const openButton = document.getElementById('openOrderFormButton');
-  const closeButton = document.getElementById('closeOrderFormButton');
-  const cancelButton = document.getElementById('cancelOrderFormButton');
-  const addItemButton = document.getElementById('addOrderItemButton');
   const closeOrderForm = document.getElementById('closeOrderForm');
   const kotPreviewForm = document.getElementById('kotPreviewForm');
   const printCloseOrderReceiptButton = document.getElementById('printCloseOrderReceiptButton');
@@ -1797,52 +1256,6 @@ function setupOrderCrud() {
   const closeCustomerPhoneInput = document.getElementById('closeOrderCustomerPhone');
   const closeCustomerNameInput = document.getElementById('closeOrderCustomerName');
   const closeCustomerIdInput = document.getElementById('closeOrderCustomerId');
-  const orderTypeInput = document.getElementById('orderType');
-  const orderCustomerPhoneInput = document.getElementById('orderCustomerPhone');
-  const orderCustomerNameInput = document.getElementById('orderCustomerName');
-  const orderCustomerIdInput = document.getElementById('orderCustomerId');
-  const orderCarNumberInput = document.getElementById('orderCarNumber');
-
-  if (openButton) {
-    openButton.addEventListener('click', () => {
-      resetOrderForm();
-      toggleModal('orderModal', 'orderModalBackdrop', true);
-    });
-  }
-
-  if (orderTypeInput) {
-    orderTypeInput.addEventListener('change', () => {
-      setOrderCustomerFieldsVisibility();
-    });
-  }
-
-  if (orderCustomerPhoneInput) {
-    orderCustomerPhoneInput.addEventListener('input', () => {
-      if (orderCustomerIdInput) orderCustomerIdInput.value = '';
-    });
-    orderCustomerPhoneInput.addEventListener('blur', () => {
-      lookupOrderCustomerByIdentifier();
-    });
-  }
-
-  if (orderCustomerNameInput) {
-    orderCustomerNameInput.addEventListener('input', () => {
-      if (orderCustomerIdInput) orderCustomerIdInput.value = '';
-    });
-  }
-
-  if (orderCarNumberInput) {
-    orderCarNumberInput.addEventListener('input', () => {
-      if (orderCustomerIdInput) orderCustomerIdInput.value = '';
-    });
-    orderCarNumberInput.addEventListener('blur', () => {
-      orderCarNumberInput.value = normalizeOrderCarNumber(orderCarNumberInput.value);
-      lookupOrderCustomerByIdentifier();
-    });
-  }
-
-  if (closeButton) closeButton.addEventListener('click', resetOrderForm);
-  if (cancelButton) cancelButton.addEventListener('click', resetOrderForm);
 
   if (closeCloseOrderButton) closeCloseOrderButton.addEventListener('click', closeCloseOrderModal);
   if (cancelCloseOrderButton) cancelCloseOrderButton.addEventListener('click', closeCloseOrderModal);
@@ -1949,41 +1362,6 @@ function setupOrderCrud() {
     });
   }
 
-  if (addItemButton) {
-    addItemButton.addEventListener('click', () => {
-      const menuItemId = Number(document.getElementById('orderMenuItemId')?.value || 0);
-      const quantity = Number(document.getElementById('orderItemQuantity')?.value || 1);
-      const portion = getSelectedPortion();
-      const nextItems = addItemToCollection(getCurrentDraftItems(), menuItemId, quantity, portion);
-
-      if (!nextItems) {
-        showSaveMessage('orderSaveMessage', 'Select a dish before adding it to the order.', true);
-        return;
-      }
-      $('#orderMenuItemId').val(null).trigger('change');
-      document.querySelector(`input[name="orderPortion"][value="full"]`).checked = true;
-      const priceHint = document.getElementById('orderSelectedPrice');
-      priceHint.textContent = '';
-      setDraftItems(nextItems);
-      showSaveMessage('orderSaveMessage', `${getPortionLabel(portion)} portion added to the draft order.`);
-
-      const qty = document.getElementById('orderItemQuantity');
-      if (qty) qty.value = 1;
-    });
-  }
-
-  const draftMenuSelect = document.getElementById('orderMenuItemId');
-  if (draftMenuSelect) {
-    $('#orderMenuItemId').on('select2:select', function(e) {
-    updateDraftPriceHint();
-});
-    draftMenuSelect.addEventListener('change', updateDraftPriceHint);
-  }
-
-  document.querySelectorAll('input[name="orderPortion"]').forEach(radio => {
-    radio.addEventListener('change', updateDraftPriceHint);
-  });
-
   if (kotPreviewForm) {
     kotPreviewForm.addEventListener('change', event => {
       if (event.target.closest('.kot-selection-checkbox')) {
@@ -1991,85 +1369,6 @@ function setupOrderCrud() {
         if (order) {
           updateKotPreviewContent(order);
         }
-      }
-    });
-  }
-
-  if (draftItemsContainer) {
-    draftItemsContainer.addEventListener('click', async event => {
-      const addButton = event.target.closest('[data-order-action="add-draft-item"]');
-      if (addButton) {
-        const menuItemId = addButton.getAttribute('data-menu-item-id');
-        const portion = addButton.getAttribute('data-portion');
-        const updated = addItemToCollection(getCurrentDraftItems(), menuItemId, 1, portion);
-        if (updated) {
-          setDraftItems(updated);
-          showSaveMessage('orderSaveMessage', 'Dish quantity increased.');
-          await persistDraftItemsIfEditing(updated);
-        }
-        return;
-      }
-
-      const decrementButton = event.target.closest('[data-order-action="decrement-draft-item"]');
-      if (decrementButton) {
-        const menuItemId = decrementButton.getAttribute('data-menu-item-id');
-        const portion = decrementButton.getAttribute('data-portion');
-        const updated = decrementItemInCollection(getCurrentDraftItems(), menuItemId, portion);
-        setDraftItems(updated);
-        showSaveMessage('orderSaveMessage', 'Dish quantity decreased.');
-        await persistDraftItemsIfEditing(updated);
-        return;
-      }
-
-      const button = event.target.closest('[data-order-action="remove-draft-item"]');
-      if (!button) return;
-
-      const menuItemId = button.getAttribute('data-menu-item-id');
-      const portion = button.getAttribute('data-portion');
-      const updated = removeItemFromCollection(getCurrentDraftItems(), menuItemId, portion);
-      setDraftItems(updated);
-      showSaveMessage('orderSaveMessage', 'Dish removed from the draft order.');
-      await persistDraftItemsIfEditing(updated);
-    });
-  }
-
-  if (form) {
-    form.addEventListener('submit', async event => {
-      event.preventDefault();
-
-      const draftItems = getCurrentDraftItems();
-      if (!draftItems.length) {
-        showSaveMessage('orderSaveMessage', 'Add at least one dish before submitting the order.', true);
-        return;
-      }
-
-      const isEdit = orderCrudState.editingId !== null;
-      const baseOrder = buildFormBaseOrder();
-      const url = isEdit ? `/api/orders/${orderCrudState.editingId}` : `/api/orders/${headerRestaurantId}`;
-      const method = isEdit ? 'PUT' : 'POST';
-
-      try {
-        const defaultCustomerId = Number(document.getElementById('orderCustomerId')?.value || 0);
-        const resolvedCustomerId = await resolveCustomerForOrder(defaultCustomerId);
-        const response = await fetch(url, {
-          method,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(buildOrderPayload({
-            ...baseOrder,
-            customerId: shouldCaptureOrderCustomerDetails() ? resolvedCustomerId : defaultCustomerId
-          }, draftItems))
-        });
-
-        if (!response.ok) {
-          throw new Error(`Save failed with status ${response.status}`);
-        }
-
-        showSaveMessage('orderSaveMessage', isEdit ? 'Order updated successfully.' : 'Order saved successfully.');
-        await loadOrders();
-        resetOrderForm();
-        modalCloseActions.orderModal?.();
-      } catch (error) {
-        showSaveMessage('orderSaveMessage', error.message, true);
       }
     });
   }
@@ -2162,30 +1461,12 @@ function setupOrderCrud() {
       const action = button.getAttribute('data-order-action');
 
       try {
-        if (action === 'edit') openOrderForEdit(id);
+        if (action === 'edit') window.location.assign(`/orders/new?editId=${id}`);
         if (action === 'delete') await removeOrder(id);
         if (action === 'print-kot') openKotPreviewModal(id);
         if (action === 'close') openCloseOrderModal(id);
-        if (action === 'add-item') await addDishToInlineOrder(id);
-        if (action === 'increment-item') await incrementDishInInlineOrder(id, button.getAttribute('data-menu-item-id'), button.getAttribute('data-portion'));
-        if (action === 'decrement-item') await decrementDishInInlineOrder(id, button.getAttribute('data-menu-item-id'), button.getAttribute('data-portion'));
-        if (action === 'remove-item') await removeDishFromInlineOrder(id, button.getAttribute('data-menu-item-id'), button.getAttribute('data-portion'));
       } catch (error) {
         showSaveMessage('orderSaveMessage', error.message, true);
-      }
-    });
-
-    body.addEventListener('change', event => {
-      const select = event.target.closest('[data-order-menu-select]');
-      if (select) {
-        updateInlinePriceHint(select.getAttribute('data-order-menu-select'));
-        return;
-      }
-
-      const portionRadio = event.target.closest('input[type="radio"][name^="orderPortion-"]');
-      if (portionRadio) {
-        const orderId = String(portionRadio.name || '').replace('orderPortion-', '');
-        if (orderId) updateInlinePriceHint(orderId);
       }
     });
   }
@@ -2205,8 +1486,6 @@ document.addEventListener('DOMContentLoaded', () => {
   setupModalAwareForms();
   loadOrderMeta();
   setupOrderCrud();
-  setOrderFormMode(false);
-  setOrderCustomerFieldsVisibility();
 
   Promise.all([
     loadDiscounts().catch(() => {
@@ -2215,7 +1494,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }),
     loadMenuItems().catch(() => {
       orderCrudState.menuItems = [];
-      buildMenuOptions();
     }),
     loadOrders()
   ]).catch(() => renderOrdersCards([]));

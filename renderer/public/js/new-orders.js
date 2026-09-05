@@ -2,7 +2,8 @@ const orderCrudState = {
   menuItems: [],
   draftItems: [],
   activeCategory: 'All',
-  searchTerm: ''
+  searchTerm: '',
+  editingOrderId: null
 };
 
 function isCarOrderSelected() {
@@ -357,6 +358,70 @@ function buildOrderPayload(customerIdOverride = null) {
   };
 }
 
+function getOrderItemsFromOrder(order) {
+  const items = Array.isArray(order?.orderItems)
+    ? order.orderItems
+    : (Array.isArray(order?.itemsPayload) ? order.itemsPayload : []);
+
+  return items.map(item => {
+    const menuItemId = Number(item.menuItem?.id ?? item.menuItemId ?? item.menu_item_id ?? 0);
+    if (!menuItemId) return null;
+    const menuItem = item.menuItem || getMenuItemById(menuItemId) || {};
+    const portion = normalizePortion(item.portion);
+
+    return {
+      menuItemId,
+      name: menuItem.name || item.name || `Item #${menuItemId}`,
+      quantity: Number(item.quantity || 1),
+      portion,
+      price: Number(item.price ?? getMenuItemPriceByPortion(menuItem, portion))
+    };
+  }).filter(Boolean);
+}
+
+function setOrderFormModeForEdit(order) {
+  const heading = document.querySelector('.panel-title');
+  if (heading) heading.textContent = `Edit Order ${order?.strOrderId || ''}`.trim();
+
+  const submitButton = document.querySelector('#orderForm button[type="submit"]');
+  if (submitButton) submitButton.textContent = 'Update Order';
+}
+
+function populateOrderFormForEdit(order) {
+  const orderType = document.getElementById('orderType');
+  const orderStatus = document.getElementById('orderStatus');
+  const serverName = document.getElementById('serverName');
+  const customerId = document.getElementById('orderCustomerId');
+  const customerName = document.getElementById('orderCustomerName');
+  const customerPhone = document.getElementById('orderCustomerPhone');
+  const carNumber = document.getElementById('orderCarNumber');
+
+  if (orderType) orderType.value = order.order_type || 'Dine-in';
+  if (orderStatus) orderStatus.value = order.status || 'Pending';
+  if (serverName) serverName.value = order.server_name || '';
+  if (customerId) customerId.value = order.customer?.id ? String(order.customer.id) : '';
+  if (customerName) customerName.value = order.customer?.name || '';
+  if (customerPhone) customerPhone.value = order.customer?.phone || '';
+  if (carNumber) carNumber.value = order.customer?.carNumber || '';
+
+  $('#orderTableId').val(String(order.tableId ?? 0)).trigger('change');
+
+  setCarOrderFieldsVisibility();
+  setCustomerLookupMessage('');
+  setDraftItems(getOrderItemsFromOrder(order));
+  setOrderFormModeForEdit(order);
+}
+
+async function loadOrderForEdit(orderId) {
+  const response = await fetch(`/api/orders/id/${orderId}`);
+  if (!response.ok) {
+    throw new Error(`Unable to load order (${response.status}).`);
+  }
+
+  const order = await response.json();
+  populateOrderFormForEdit(order);
+}
+
 function getMenuCategories() {
   const categories = new Set();
   let hasFavourites = false;
@@ -617,10 +682,14 @@ function setupOrderPage() {
         return;
       }
 
+      const isEdit = orderCrudState.editingOrderId !== null;
+      const url = isEdit ? `/api/orders/${orderCrudState.editingOrderId}` : `/api/orders/${headerRestaurantId}`;
+      const method = isEdit ? 'PUT' : 'POST';
+
       try {
         const resolvedCustomerId = await resolveCustomerForCarOrder();
-        const response = await fetch(`/api/orders/${headerRestaurantId}`, {
-          method: 'POST',
+        const response = await fetch(url, {
+          method,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(buildOrderPayload(shouldCaptureCustomerDetails() ? resolvedCustomerId : null))
         });
@@ -631,7 +700,7 @@ function setupOrderPage() {
 
         window.location.assign('/orders/open');
       } catch (error) {
-        showSaveMessage('orderSaveMessage', error.message || 'Unable to create order.', true);
+        showSaveMessage('orderSaveMessage', error.message || 'Unable to save order.', true);
       }
     });
   }
@@ -642,11 +711,20 @@ function setupOrderPage() {
 document.addEventListener('DOMContentLoaded', () => {
   bindCommonChrome();
 
+  const editId = new URLSearchParams(window.location.search).get('editId');
+  if (editId) orderCrudState.editingOrderId = Number(editId);
+
   setupOrderPage();
   setDraftItems([]);
   setCarOrderFieldsVisibility();
 
-  loadMenuItems().catch(error => {
+  loadMenuItems().then(() => {
+    if (orderCrudState.editingOrderId) {
+      return loadOrderForEdit(orderCrudState.editingOrderId).catch(error => {
+        showSaveMessage('orderSaveMessage', error.message || 'Unable to load order for editing.', true);
+      });
+    }
+  }).catch(error => {
     const dishList = document.getElementById('dish-list');
     if (dishList) {
       dishList.innerHTML = '<div class="muted">Unable to load dishes right now.</div>';
