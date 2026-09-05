@@ -2371,7 +2371,7 @@ button.secondary:hover, .ghost-button:hover { background: #f8fafc; }
 }
 
 .menu-card {
-  border: 1px solid var(--border);
+  border: 1px solid #000;
   border-radius: 7px;
   background: #fff;
   overflow: hidden;  
@@ -2390,12 +2390,11 @@ button.secondary:hover, .ghost-button:hover { background: #f8fafc; }
 .menu-thumb img { width: 100%; height: 100%; object-fit: cover; }
 .menu-card-body { padding: 9px 10px 10px; }
 .menu-item-name { font-weight: 700; font-size: 12px; line-height: 1.25; min-height: 30px; }
-.menu-item-category { color: var(--muted); font-size: 10px; margin-top: 3px; }
+.menu-item-category { color: #000000; font-size: 10px; margin-top: 3px; }
 .menu-item-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; gap: 6px; }
 .menu-price { font-weight: 750; font-size: 12px; }
 .menu-card select {
   width: 100%;
-  font-size: 10px !important;
   padding: 3px 4px;
   border-radius: 4px;
   margin-top: 6px;

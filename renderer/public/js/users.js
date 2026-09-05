@@ -38,6 +38,7 @@ function renderUserTable(items) {
       <td>${item.name || 'Unnamed user'}</td>
       <td>${item.email || '-'}</td>
       <td>${item.role?.roleName || 'No role'}</td>
+      <td>${item.restaurant?.name || 'No restaurant'}</td>
       <td>
         <div class="menu-actions">
           <button type="button" class="menu-action-btn edit" data-user-action="edit" data-user-id="${item.id}">Edit</button>
@@ -78,7 +79,7 @@ function openUserForEdit(id) {
   if (name) name.value = item.name || '';
   if (email) email.value = item.email || '';
   if (role && item.role?.id) role.value = item.role.id;
-  if (restaurant) restaurant.value = item.restaurant?.name || '';
+  if (restaurant) restaurant.value = item.restaurant?.id || '';
   if (password) password.value = '';
 
   toggleModal('userModal', 'userModalBackdrop', true);
