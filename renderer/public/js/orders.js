@@ -1025,6 +1025,7 @@ function printKot(orderId) {
     return;
   }
 
+  const restaurant = JSON.parse(localStorage.getItem('restaurant_session') || '{}');
   let kot = orderKotStatus.get(orderId + IN_KITCHEN);
   let kotOut = orderKotStatus.get(orderId + OUT_KITCHEN);
 
@@ -1088,7 +1089,7 @@ function printKot(orderId) {
     receipt.push({ type: 'raw', format: 'command', data: CUT_FULL });
 
     console.log('Sending IN KOT receipt via electronAPI.printReceipt');
-    window.electronAPI.printReceipt(receipt);
+    window.electronAPI.printReceipt(receipt, restaurant.printerName);
   }
 
   if (kotOut) {
@@ -1123,7 +1124,7 @@ function printKot(orderId) {
     outReceipt.push({ type: 'raw', format: 'command', data: CUT_FULL });
 
     console.log('Sending OUT KOT receipt via electronAPI.printReceipt');
-    window.electronAPI.printReceipt(outReceipt);
+    window.electronAPI.printReceipt(outReceipt, restaurant.printerName);
   }
 
 
@@ -1222,7 +1223,7 @@ function printCloseOrderReceipt() {
   receipt.push({ type: 'raw', format: 'command', data: CUT_FULL });
 
   //fazia
-window.electronAPI.printReceipt(receipt);
+window.electronAPI.printReceipt(receipt, restaurant.printerName);
   // qz.print(config, receipt).catch(err => console.error(err));
 
   // const paperWidth = document.getElementById('closeOrderPaperWidth')?.value || '58';

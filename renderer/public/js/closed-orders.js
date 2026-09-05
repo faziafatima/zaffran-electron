@@ -296,7 +296,7 @@ calculatedTotal += taxAmount;
   receipt.push({ type: 'raw', format: 'command', data: "Terms & Conditions applied\n" });
   receipt.push({ type: 'raw', format: 'command', data: CUT_FULL });
 
-  window.electronAPI.printReceipt(receipt);
+  window.electronAPI.printReceipt(receipt, restaurant.printerName);
   showSaveMessage('closedOrderPrintMessage', 'Receipt sent to printer.');
 }
 

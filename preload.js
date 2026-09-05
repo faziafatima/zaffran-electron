@@ -1,7 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
-  printReceipt: (data) => ipcRenderer.send('print-receipt', data),
+  printReceipt: (data, printerName) => ipcRenderer.send('print-receipt', data, printerName),
   listPrinters: () => ipcRenderer.invoke('list-printers'),
   onPrintResult: (callback) => ipcRenderer.on('print-receipt-result', (event, result) => callback(result)),
   getAppVersion: () => ipcRenderer.invoke('get-app-version')

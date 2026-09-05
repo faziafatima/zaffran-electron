@@ -35,6 +35,7 @@ function renderRestaurantTable(items) {
       <td>${item.gstin || '-'}</td>
       <td>${item.fssai || '-'}</td>
       <td>${Number(item.taxRate || 0).toFixed(2)}%</td>
+      <td>${item.printerName || '-'}</td>
       <td>
         <div class="menu-actions">
           <button type="button" class="menu-action-btn edit" data-restaurant-action="edit" data-restaurant-id="${item.id}">Edit</button>
@@ -66,6 +67,7 @@ function openRestaurantForEdit(id) {
   const fssai = document.getElementById('restaurantFssai');
   const taxRate = document.getElementById('restaurantTaxRate');
   const prefix = document.getElementById('restaurantPrefix');
+  const printerName = document.getElementById('restaurantPrinterName');
 console.log('Editing restaurant:', item);
   if (name) name.value = item.name || '';
   if (address) address.value = item.address || '';
@@ -74,6 +76,7 @@ console.log('Editing restaurant:', item);
   if (fssai) fssai.value = item.fssai || '';
   if (taxRate) taxRate.value = Number(item.taxRate || 0);
   if (prefix) prefix.value = item.orderPrefix || '';
+  if (printerName) printerName.value = item.printerName || '';
 
   toggleModal('restaurantModal', 'restaurantModalBackdrop', true);
 }
@@ -117,7 +120,8 @@ function setupRestaurantCrud() {
         gstin: document.getElementById('restaurantGstin')?.value?.trim(),
         fssai: document.getElementById('restaurantFssai')?.value?.trim(),
         taxRate: Number(document.getElementById('restaurantTaxRate')?.value || 0),
-        orderPrefix: document.getElementById('restaurantPrefix')?.value?.trim()
+        orderPrefix: document.getElementById('restaurantPrefix')?.value?.trim(),
+        printerName: document.getElementById('restaurantPrinterName')?.value?.trim()
       };
 
       const isEdit = restaurantCrudState.editingId !== null;

@@ -417,7 +417,7 @@ electronApp.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) createWindow();
 });
 
-const PRINTER_NAME = "POS80 Printer(3)"; // Replace with your actual printer name
+const PRINTER_NAME = "POS80 Printer(3)"; // Fallback printer name used when a restaurant has no printerName configured
 
 // Lists the OS-registered printer names so PRINTER_NAME can be matched exactly (helps diagnose Bluetooth/offline printers)
 ipcMain.handle('list-printers', async () => {
@@ -479,7 +479,7 @@ async function convertReceiptToBuffer(receipt) {
 
 
 // Listen for a print event from the frontend renderer
-ipcMain.on('print-receipt', async (event, data) => {
+ipcMain.on('print-receipt', async (event, data, printerName) => {
 
     console.log('Received print request with data:', data);
 
@@ -488,22 +488,22 @@ ipcMain.on('print-receipt', async (event, data) => {
     return;
   }
 
-  
+  const targetPrinterName = (typeof printerName === 'string' && printerName.trim()) || PRINTER_NAME;
 
     try {
         // 2. Fetch the target Windows system printer instance manually
-        const printer = await getPrinterByName(PRINTER_NAME);
+        const printer = await getPrinterByName(targetPrinterName);
         
         if (!printer) {
-            console.error(`Printer named "${PRINTER_NAME}" was not found on this machine.`);
-          event.reply('print-receipt-result', { success: false, message: `Printer not found: ${PRINTER_NAME}` });
+            console.error(`Printer named "${targetPrinterName}" was not found on this machine.`);
+          event.reply('print-receipt-result', { success: false, message: `Printer not found: ${targetPrinterName}` });
             return;
         }
 
         const finalBuffer = await convertReceiptToBuffer(data);
         const printData = new Uint8Array(finalBuffer);
 
-        console.log(`Dispatching buffer stream to printer queue: ${PRINTER_NAME}...`);
+        console.log(`Dispatching buffer stream to printer queue: ${targetPrinterName}...`);
         
         // 8. Execute raw printing task directly via the device API model
         const jobId = await printer.printBytes(printData);
