@@ -1,6 +1,6 @@
 {
   "name": "zaffran-desktop-app",
-  "version": "1.0.2",
+  "version": "1.3",
   "description": "Desktop application for Zaffran Restaurant",
   "main": "main.js",
   "scripts": {
