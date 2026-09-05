@@ -118,7 +118,7 @@ function setupUserCrud() {
 
       const payload = {
         name: document.getElementById('userName')?.value?.trim(),
-        email: document.getElementById('userEmail')?.value?.trim(),
+        email: `${document.getElementById('userEmail')?.value?.trim()}@thezaffran.in`,
         roleId: Number(document.getElementById('userRoleId')?.value || 0),
         restaurantId: document.getElementById('userRestaurantId')?.value?.trim()
       };
