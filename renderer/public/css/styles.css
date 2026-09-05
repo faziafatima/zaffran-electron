@@ -2522,7 +2522,7 @@ button.secondary:hover, .ghost-button:hover { background: #f8fafc; }
 .status-pill.success i { font-size: 6px; }
 
 @media (max-width: 1199px) {
-  .order-layout { grid-template-columns: 1fr; }
+  
   .menu-panel, .cart-panel { min-height: auto; }
 }
 

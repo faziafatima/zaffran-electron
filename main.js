@@ -10,7 +10,9 @@ const sharp = require('sharp');
 const log = require('electron-log');
 
 
-
+autoUpdater.logger = log;
+autoUpdater.logger.transports.file.level = 'warn'; // Only logs warnings/errors
+autoUpdater.logger.transports.console.level = 'warn'; 
 // Logger functions
 // --- Configure the Logger ---
 // 1. Set the maximum log file size (in bytes). Here it's 5MB. 
