@@ -1347,6 +1347,7 @@ button.secondary {
 .kot-selection-list {
   display: grid;
   gap: 8px;
+  grid-template-columns: 1fr 1fr 1fr;
 }
 
 .kot-selection-row {
@@ -1354,8 +1355,7 @@ button.secondary {
   grid-template-columns: auto minmax(0, 1fr);
   gap: 10px;
   align-items: start;
-  padding: 10px 12px;
-  border-radius: 12px;
+  padding: 5px;
   border: 1px solid var(--border);
   background: #fff;
 }
@@ -2029,17 +2029,31 @@ a.button:hover {
     color: #1565C0;
     border-color: #90CAF9;
 }
+.blue:hover {
+    background: #1565C0;
+    color: #fff;
+    border-color: #1565C0;
+}
 
 .green {
     background: #E8F5E9;
     color: #2E7D32;
     border-color: #81C784;
 }
-
+.green:hover {
+    background: #2E7D32;
+    color: #fff;
+    border-color: #2E7D32;
+}
 .orange {
     background: #FFF3E0;
     color: #EF6C00;
     border-color: #FFB74D;
+}
+.orange:hover {
+    background: #EF6C00;
+    color: #fff;
+    border-color: #EF6C00;
 }
 
 .red {
@@ -2047,11 +2061,20 @@ a.button:hover {
     color: #C62828;
     border-color: #EF9A9A;
 }
-
+.red:hover {
+    background: #C62828;
+    color: #fff;
+    border-color: #C62828;
+}
 .purple {
     background: #F3E5F5;
     color: #6A1B9A;
     border-color: #BA68C8;
+}
+.purple:hover {
+    background: #6A1B9A;
+    color: #fff;
+    border-color: #6A1B9A;
 }
 
 .teal {
@@ -2059,17 +2082,32 @@ a.button:hover {
     color: #00695C;
     border-color: #4DB6AC;
 }
+.teal:hover {
+    background: #00695C;
+    color: #fff;
+    border-color: #00695C;
+}
 
 .yellow {
     background: #FFFDE7;
     color: #9E9D24;
     border-color: #FFF176;
 }
+.yellow:hover {
+    background: #9E9D24;
+    color: #fff;
+    border-color: #9E9D24;
+}
 
 .gray {
     background: #F5F5F5;
     color: #424242;
     border-color: #BDBDBD;
+}
+.gray:hover {
+    background: #424242;
+    color: #fff;
+    border-color: #424242;
 }
 
 /* Sticky Header */
@@ -2504,4 +2542,29 @@ button.secondary:hover, .ghost-button:hover { background: #f8fafc; }
 .app-version {
     font-size: 10px;
     float: right;
+}
+
+
+
+#kotPreviewContent {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.kot-ticket-section{
+  border: 1px solid #898787;
+  border-radius: 6px;
+  padding: 10px;
+  background: #fff;
+}
+
+.div-color{
+  border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--panel-2);
+}
+
+.dark-border{
+  border: 1px solid #000 !important;
 }

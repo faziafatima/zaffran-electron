@@ -111,7 +111,7 @@ function renderClosedOrdersTable() {
         <td>${paymentMode}</td>
         <td>${formatCurrency(total)}</td>
         <td>${closedAt}</td>
-        <td><button type="button" class="menu-action-btn" data-order-action="view-closed-order" data-order-id="${order.id}">View</button></td>
+        <td><button type="button" class="menu-action-btn blue" data-order-action="view-closed-order" data-order-id="${order.id}">View</button></td>
       </tr>
     `;
   }).join('');
@@ -120,7 +120,7 @@ function renderClosedOrdersTable() {
 function renderClosedOrderDetails(order) {
   const content = document.getElementById('closedOrderDetailsContent');
   if (!content || !order) return;
-
+  console.log(order);
   const items = getClosedOrderItems(order);
   const subtotal = Number(order.item_price || 0);
   const taxPercentage = Number(order.tax_percentage || 0);
@@ -129,6 +129,7 @@ function renderClosedOrderDetails(order) {
   const discountPerc = Number(order.discount_perc || 0);
   const totalPayable = Number(order.total_payable_amount || 0);
   const isSplitBill = Number(order.isSplitBill || 0) === 1;
+  const noTax = order.no_tax ? "No Tax" : "";
   const itemRows = items.length
     ? items.map(item => `
         <tr>
@@ -142,7 +143,7 @@ function renderClosedOrderDetails(order) {
     : '<tr><td colspan="5" class="empty-state">No item details are available for this order.</td></tr>';
 
   content.innerHTML = `
-    <div class="details-grid">
+    <div class="four-grid">
       <div class="details-card"><span>Order number</span><strong>#${order.id || '—'}</strong></div>
       <div class="details-card"><span>Status</span><strong><span class="status-pill ${statusClass(order.status)}">${order.status || 'Paid'}</span></strong></div>
       <div class="details-card"><span>Table</span><strong>${order.tableId || '—'}</strong></div>
@@ -152,10 +153,10 @@ function renderClosedOrderDetails(order) {
       <div class="details-card"><span>Payment mode</span><strong>${isSplitBill ? 'Split bill' : String(order.payment_mode || 'cash').toUpperCase()}</strong></div>
       <div class="details-card"><span>Closed at</span><strong>${formatDateTime(order.updatedAt || order.createdAt)}</strong></div>
     </div>
-
+    <div class="double-grid">
     <div class="detail-section">
       <h4>Order Items</h4>
-      <div class="table-responsive">
+      <div class="div-color table-responsive">
         <table class="table">
           <thead>
             <tr><th>Item</th><th>Portion</th><th>Qty</th><th>Rate</th><th>Amount</th></tr>
@@ -169,13 +170,15 @@ function renderClosedOrderDetails(order) {
       <h4>Payment Summary</h4>
       <div class="receipt-summary">
         <div class="receipt-summary-row"><span>Subtotal</span><strong>${formatCurrency(subtotal)}</strong></div>
-        <div class="receipt-summary-row"><span>Tax (${taxPercentage.toFixed(0)}%)</span><strong>${formatCurrency(taxAmount)}</strong></div>
+        <div class="receipt-summary-row"><span>Tax ${noTax ? '- (No Tax) ' : ''}(${taxPercentage.toFixed(0)}%)</span><strong>${formatCurrency(taxAmount)}</strong></div>
         <div class="receipt-summary-row"><span>Discount${discountPerc ? ` (${discountPerc.toFixed(0)}%)` : ''}</span><strong>- ${formatCurrency(discountAmount)}</strong></div>
+        ${order.on_spot_discount ? `<div class="receipt-summary-row"><span>On-spot discount</span><strong>- ${formatCurrency(order.on_spot_discount)}</strong></div>` : ''}
         <div class="receipt-summary-row receipt-summary-total"><span>Total payable</span><strong>${formatCurrency(totalPayable)}</strong></div>
         <div class="receipt-summary-row"><span>Cash payment</span><strong>${formatCurrency(order.cash_payment || 0)}</strong></div>
         <div class="receipt-summary-row"><span>Card payment</span><strong>${formatCurrency(order.card_payment || 0)}</strong></div>
         <div class="receipt-summary-row"><span>UPI payment</span><strong>${formatCurrency(order.upi_payment || 0)}</strong></div>
       </div>
+    </div>
     </div>
   `;
 }

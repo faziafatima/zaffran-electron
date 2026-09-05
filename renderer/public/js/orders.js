@@ -303,12 +303,7 @@ function buildKotTicketSectionMarkup(order, kitchenType, items) {
 
   return `
    <div class="text-center kot-ticket-section">
-  <p><b>Kitchen Order Ticket</b></p>
-  <p><b>${getKitchenTypeLabel(kitchenType)}</b></p>
-  <p>${getFormattedCurrentDateTime()}</p>
-  <p><b>Order No:</b> ${order.strOrderId || '-'}</p>
-  <p> ${order.order_type == 'Dine-in' ? '<b>Dine-in</b> <br/><b>Table: </b>'+ (order.tableId || '-') : (order.order_type == 'car' ? '<b>Car Number:</b> '+ (order.customer?.carNumber || '-') : '<b>'+order.order_type+'</b>')}</p>
-  <p> ${order.server_name ? '<b>Server:</b> ' + order.server_name : ''}</p>
+   <p><b>${getKitchenTypeLabel(kitchenType)}</b></p>
   <hr/>
   <table class="table kot-table">
   <tr><th>Item</th><th>Portion</th><th>Qty</th></tr>
@@ -335,7 +330,7 @@ function buildKotTicketMarkup(order, selectedItems) {
     return buildKotTicketSectionMarkup(order, 'in-kitchen', []);
   }
 
-  return sections.join('<div class="kot-ticket-page-break"></div>');
+  return sections.join('');
 }
 
 function renderKotSelectionMarkup(previewItems, selectedSignatures = null) {
@@ -596,9 +591,7 @@ function renderCloseOrderPreview(order, summary, discount) {
   
   preview.innerHTML = `
   <div class="text-center kot-panel">
-  <p>${getFormattedCurrentDateTime()}</p>
   <p><b>Order No:</b> ${order.strOrderId || '-'}</p>
-  <p><b>Customer:</b> ${customer.customerName}</p>
   ${customerPhoneMarkup}
   
   </div>
@@ -1278,14 +1271,14 @@ function setupOrderCrud() {
   const onSpotDiscountInput = document.getElementById('closeOrderOnSpotDiscount');
   if (onSpotDiscountInput) {
     onSpotDiscountInput.addEventListener('input', () => {
-      refreshCloseOrderSummary();
+      refreshCloseOrderSummary(true);
     });
   }
 
   const noTaxCheckbox = document.getElementById('closeOrderNoTax');
   if (noTaxCheckbox) {
     noTaxCheckbox.addEventListener('change', () => {
-      refreshCloseOrderSummary();
+      refreshCloseOrderSummary(true);
     });
   }
 

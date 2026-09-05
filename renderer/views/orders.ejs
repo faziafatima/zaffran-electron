@@ -44,50 +44,48 @@
           <button type="button" class="icon-button" id="closeCloseOrderFormButton" aria-label="Close close-order form">×</button>
         </div>
         <form id="closeOrderForm">
-          <div class="field hide">
-            <label for="closeOrderPaperWidth">Receipt paper width</label>
-            <select id="closeOrderPaperWidth">
-              <option value="58" >58mm thermal roll</option>
-              <option value="80" selected>80mm thermal roll</option>
-            </select>
-          </div>
+          <div class="double-grid">
           <section class="panel" id="closeOrderPreviewPanel">
           
              <div class="text-center kot-panel">
-              <img src="/img/logo-bw.png" alt="logo-print" class="logo-print" />
-              <p><b><%= restaurant?.name || 'Zaffran' %></b></p>
-              <p><b><%= restaurant?.address || '' %></b></p>
-              <p><b>Phone: <%= restaurant?.phoneNumber || '' %></b></p>
-              <p><b>GSTIN: <%= restaurant?.gstin || '' %></b></p>
-              <p><b>FSSAI: <%= restaurant?.fssai || '' %></b></p>
-              <hr/>
               <p><b>Tax Invoice</b></p>
             <div id="closeOrderPreview"></div>
           </section>
-          <div class="panel order-form-grid">
+          <div class="panel div-color dark-border">
             <!-- <div class="field"><label for="closeOrderSubtotal">Subtotal</label><input id="closeOrderSubtotal" type="number" step="0.01" readonly /></div> -->
             <!-- <div class="field"><label for="closeOrderTaxPercentage">Tax %</label><input id="closeOrderTaxPercentage" type="number" step="0.01" min="0" readonly /></div> -->
             <!-- <div class="field"><label for="closeOrderTaxAmount">Tax amount</label><input id="closeOrderTaxAmount" type="number" step="0.01" readonly /></div> -->
+            <div class="double-grid">
+            <div>
             <div class="field"><label for="closeOrderDiscountId">Discount</label><select id="closeOrderDiscountId"><option value="" selected>No discount</option></select></div>
             <!-- <div class="field"><label for="closeOrderDiscountAmount">Discount amount</label><input id="closeOrderDiscountAmount" type="number" step="0.01" min="0" readonly /></div> -->
-            <div class="field"  style="display: none;"><label for="closeOrderTotalPayable">Total payable</label><input id="closeOrderTotalPayable" type="number" step="0.01" readonly /></div>
-             <div class="field"><label><input id="closeOrderSplitBill" type="checkbox" /> Amount split (Cash + UPI)</label></div>
+            
+            <div class="field"><label><input id="closeOrderSplitBill" type="checkbox" /> Amount split (Cash + UPI)</label></div>
             <div class="field" id="closeOrderPaymentModeField" hidden><label for="closeOrderPaymentMode">Payment mode</label><select id="closeOrderPaymentMode"><option value="cash" selected>Cash</option><option value="card">Card</option><option value="upi">UPI</option></select></div>
-            <div class="field" id="closeOrderSingleAmountField" style="display:none;"><label for="closeOrderSingleAmount">Amount received</label><input id="closeOrderSingleAmount" type="number" step="0.01" min="0" /></div>
             <div class="field" id="closeOrderCardField"  style="display:none;"><label for="closeOrderCardPayment">Card payment</label><input id="closeOrderCardPayment" type="number" step="0.01" min="0" value="0" /></div>
             <div class="field" id="closeOrderCashField" hidden><label for="closeOrderCashPayment">Cash payment</label><input id="closeOrderCashPayment" type="number" step="0.01" min="0" value="0" /></div>
             <div class="field" id="closeOrderUpiField" hidden><label for="closeOrderUpiPayment">UPI payment</label><input id="closeOrderUpiPayment" type="number" step="0.01" min="0" value="0" /></div>
+            </div>
+            <div>
+            
             <div class="field" id="closeOrderOnSpotDiscountField"><label for="closeOrderOnSpotDiscount">On-Spot discount</label><input id="closeOrderOnSpotDiscount" type="number" step="0.01" min="0" value="0" /></div>
             <div class="field"><label><input id="closeOrderNoTax" type="checkbox" /> No Tax</label></div>
             <div class="field"><label for="closeOrderCustomerPhone">Customer phone</label><input id="closeOrderCustomerPhone" type="tel" /></div>
+            <div class="field" id="closeOrderSingleAmountField" style="display:none;"><label for="closeOrderSingleAmount">Amount received</label><input id="closeOrderSingleAmount" type="number" step="0.01" min="0" /></div>
+            <div class="field"  style="display: none;"><label for="closeOrderTotalPayable">Total payable</label><input id="closeOrderTotalPayable" type="number" step="0.01" readonly /></div>
             <div class="field"><label for="closeOrderCustomerName">Customer name</label><input id="closeOrderCustomerName" type="text" /></div>
+          </div>
+          <p class="muted" id="closeOrderSplitHint"></p>  
+          </div>
+            
             <input id="closeOrderCustomerId" type="hidden" />
           </div>
+          </div>
           <p class="muted" id="closeOrderCustomerLookupMessage"></p>
-          <p class="muted" id="closeOrderSplitHint"></p>
+          
           <div class="modal-actions">
-            <button class="secondary" type="button" id="printCloseOrderReceiptButton">Print</button>
-            <button class="secondary" type="submit">Confirm & Close</button>
+            <button class="blue" type="button" id="printCloseOrderReceiptButton">Print</button>
+            <button class="green" type="submit">Confirm & Close</button>
             <button class="ghost-button" type="button" id="cancelCloseOrderFormButton">Cancel</button>
           </div>
           <p class="muted" id="closeOrderPrintMessage"></p>
@@ -120,11 +118,11 @@
             </div>
             <div id="kotItemSelection"></div>
           </section>
-          <section class="panel kot-panel" id="kotPreviewPanel">
+          <section class="kot-panel" id="kotPreviewPanel">
             <div id="kotPreviewContent"></div>
           </section>
           <div class="modal-actions">
-            <button class="secondary" type="submit">Print</button>
+            <button class="blue" type="submit">Print</button>
             <button class="ghost-button" type="button" id="cancelKotPreviewButton">Cancel</button>
           </div>
           <p class="muted" id="kotPrintMessage"></p>
