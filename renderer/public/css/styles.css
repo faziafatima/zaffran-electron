@@ -17,17 +17,50 @@
   --sidebar-muted: #93a4c6;
   --shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
 }
+html{
+  margin: 0;
+  padding: 0;
+}
+body{
+  position: relative; /* 1. Establishes a boundary for the background layer */
+  width: 100%;
+  min-height: 100vh;
+  color: var(--text); /* Text color remains fully visible */
+}
+
+body::before {
+  content: "";
+  position: absolute;
+  top: 0; 
+  left: 0;
+  width: 100%;
+  height: 100%;
+  
+  /* 2. Add your background properties here */
+  background-image: url('../img/bg.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  
+  /* 3. Adjust this value to change the transparency (0.0 to 1.0) */
+  opacity: 0.4; 
+  
+  /* 4. Pushes the image layer behind the text content */
+  z-index: -1; 
+}
 
 body {
   margin: 0;
+  padding: 0;
+  min-height: 100vh; 
   font-family: 'Inter', 'Segoe UI', sans-serif;
   /* background: linear-gradient(180deg, #f5f8fc 0%, #ecf1f7 100%); */
-  background-image: url("../img/bg.jpg");
+  /* background-image: url("../img/bg-light.png");
   background-size: cover;
   background-repeat: no-repeat;
-  background-position: center;
+  background-position: center; */
   color: var(--text);
-  font-size: 15px;
+  font-size: 12px;
 }
 
 a {
@@ -67,7 +100,7 @@ a {
   background: linear-gradient(135deg, #1d4ed8, #60a5fa);
   color: white;
   font-weight: 700;
-  font-size: 20px;
+  font-size: 12px;
   flex: 0 0 auto;
 }
 
@@ -440,6 +473,10 @@ a {
     font-size: 0.8em;
 
 }
+.order-card-kicker span {
+   font-size: 12px;
+   font-weight: bold;
+}
 
 .order-card h4 {
   margin: 0;
@@ -793,7 +830,7 @@ button.secondary {
 .table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 8px;
+ 
 }
 
 .table th,
@@ -801,7 +838,7 @@ button.secondary {
   text-align: left;
   padding: 8px 7px;
   border-bottom: 1px solid var(--border);
-  font-size: 0.92rem;
+  font-size: 12px;
 }
 
 .table tbody tr:hover {
@@ -1909,28 +1946,17 @@ a.button:hover {
 }
 
 .page-heading {
-  /* Alignment & Block Layout */
   display: block;
   text-align: center;
-  margin: 16px auto;
-  padding-bottom: 12px;
+  margin: 0px auto;
+  padding-bottom: 0px;
   max-width: max-content;
-  /* Keeps the bottom line tracking the text width */
-
-  /* Typography (Looks like a major heading) */
   font-family: 'Arial Black', Impact, sans-serif;
-  font-size: 20px;
-  /* Large heading size */
+  font-size: 15px;
   font-weight: 900;
-  /* Ultra bold */
   text-transform: uppercase;
-  /* Clean, authoritative look */
   letter-spacing: 2px;
-  /* Prevents letters from crowding */
   color: #2c1e18;
-  /* Deep wood/charcoal tone to match corkboard */
-
-  /* Visual Accent (Bottom Border Anchor) */
   border-bottom: 4px solid #5c4033;
 }
 
@@ -2213,7 +2239,7 @@ button.secondary:hover, .ghost-button:hover { background: #f8fafc; }
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: .05em;
-  color: #7a8695;
+  color: #307519;
   background: #fbfcfd;
 }
 
@@ -2241,10 +2267,10 @@ button.secondary:hover, .ghost-button:hover { background: #f8fafc; }
   align-items: center;
   justify-content: space-between;
 }
-.panel-title { font-weight: 750; font-size: 14px; }
+.panel-title { font-weight: 750; font-size: 12px; }
 .panel-subtitle { color: var(--muted); font-size: 11px; margin-top: 2px; }
 
-.context-title { display: flex; align-items: center; gap: 9px; font-size: 15px; font-weight: 700; }
+.context-title { display: flex; align-items: center; gap: 9px; font-size: 12px; font-weight: 700; }
 .context-meta { color: var(--muted); font-size: 11px; margin-top: 3px; }
 
 .menu-toolbar {
@@ -2273,7 +2299,7 @@ button.secondary:hover, .ghost-button:hover { background: #f8fafc; }
 
 .menu-body {
   display: grid;
-  grid-template-columns: 104px minmax(0, 1fr);
+  grid-template-columns: 120px minmax(0, 1fr);
   min-height: 0;
   flex: 1;
 }
@@ -2282,17 +2308,20 @@ button.secondary:hover, .ghost-button:hover { background: #f8fafc; }
 .category-btn {
   width: 100%;
   border: 0;
+  border-bottom: 1px solid #000;
   background: transparent;
   color: #566171;
   text-align: left;
   padding: 9px 10px;
-  border-radius: 5px;
-  margin-bottom: 2px;
+  border-radius: 0;
+  margin-bottom: 13px;
   font-weight: 600;
   display: block;
+  font-size: 16px;
 }
-.category-btn:hover { background: #f0f4fa; color: var(--text); }
-.category-btn.active { background: #eaf2ff; color: var(--accent); }
+.category-btn:hover { background: #000; color: #ffffff; }
+.category-btn.active { background: #1e6d18;
+    color: #ffffff; }
 
 .menu-grid {
   padding: 13px;
@@ -2334,13 +2363,13 @@ button.secondary:hover, .ghost-button:hover { background: #f8fafc; }
   margin-top: 6px;
 }
 .add-btn {
-  width: 25px;
-  height: 25px;
+  width: 35px;
+  height: 35px;
   flex: 0 0 auto;
   border: 1px solid #cfe0f9;
   border-radius: 5px;
-  background: #edf5ff;
-  color: var(--accent);
+  background: #1e6d18;
+  color: #ffffff;
   display: grid;
   place-items: center;
   font-weight: 700;
@@ -2366,8 +2395,8 @@ button.secondary:hover, .ghost-button:hover { background: #f8fafc; }
 .cart-item-price { font-weight: 700; white-space: nowrap; }
 .qty-control { display: flex; align-items: center; gap: 7px; margin-top: 8px; }
 .qty-btn {
-  width: 25px;
-  height: 25px;
+  width: 35px;
+  height: 35px;
   border: 1px solid var(--border);
   background: #000000;
   border-radius: 4px;
@@ -2377,14 +2406,14 @@ button.secondary:hover, .ghost-button:hover { background: #f8fafc; }
   padding: 3px;
 }
 .qty-btn:hover { background: #2d60ad; }
-.qty-value { min-width: 15px; text-align: center; font-weight: 700; }
+.qty-value { min-width: 15px; text-align: center; font-weight: 700; font-size: 14px; }
 .remove-item {
       margin-left: auto;
     color: #c2092a;
     background: #eacfcf;
     /* border: 0; */
-    width: 25px;
-    height: 25px;
+    width: 35px;
+    height: 35px;
     flex: 0 0 auto;
     border: 1px solid #cfe0f9;
     border-radius: 5px;
@@ -2433,7 +2462,7 @@ button.secondary:hover, .ghost-button:hover { background: #f8fafc; }
 .totals > div { display: flex; justify-content: space-between; padding: 4px 0; }
 .totals span { color: var(--muted); }
 .total-row { padding-top: 8px !important; margin-top: 4px; border-top: 1px dashed var(--border); }
-.total-row span, .total-row strong { color: var(--text); font-size: 15px; }
+.total-row span, .total-row strong { color: var(--text); font-size: 12px; }
 .total-row strong { font-weight: 800; }
 
 .cart-actions { padding: 11px 15px 14px; display: grid; grid-template-columns: 1fr 1.35fr; gap: 8px; }

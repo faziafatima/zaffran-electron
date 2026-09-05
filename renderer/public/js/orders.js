@@ -966,7 +966,7 @@ function renderOrdersCards(items) {
 
     return `
       <article class="order-card panel" data-order-id="${order.id}" style="margin-top: 20px;">
-      <div class="order-card-kicker ${order.order_type}"><span style="font-size:14px; font-weight:bold;">${(order.order_type === 'Dine-in' && order.tableId ? 'Table ' + order.tableId : '')}  ${order.order_type === 'car' ? 'Car'  : ''}  ${order.order_type === 'Takeaway' ? 'Takeaway'  : ''}</span> <br/>${order.strOrderId || '000'}</div>
+      <div class="order-card-kicker ${order.order_type}"><span>${(order.order_type === 'Dine-in' && order.tableId ? 'Table ' + order.tableId : '')}  ${order.order_type === 'car' ? 'Car'  : ''}  ${order.order_type === 'Takeaway' ? 'Takeaway'  : ''}</span> <br/>${order.strOrderId || '000'}</div>
          
         <div class="order-card-head">
              
@@ -975,8 +975,8 @@ function renderOrdersCards(items) {
           <span class="status-pill ${statusClass(order.status)}">${order.status || 'Pending'}</span>
           <span class="status-pill info">${itemCount} dish${itemCount === 1 ? '' : 'es'}</span>
         </div>
-            <div style="">${order.customer ? '<b>Customer Name:</b> ' + order.customer.name + ' (' + order.customer.phone + ')' : ''}</div>
-            <div style=""> ${order.server_name ? '<b>Server: </b>' + order.server_name : ''}</div>
+            ${order.customer ? '<div style=""><b>Customer Name:</b> ' + order.customer.name + ' (' + order.customer.phone + ')</div>' : ''}
+            ${order.server_name ? '<div style=""><b>Server: </b>' + order.server_name + '</div>' : ''}
         <table class="table">
         <thead>
           <tr>

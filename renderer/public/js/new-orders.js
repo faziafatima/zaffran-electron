@@ -6,6 +6,46 @@ const orderCrudState = {
   editingOrderId: null
 };
 
+const TOTAL_TABLE_COUNT = 25;
+
+// Rebuilds the Table dropdown, hiding tables already occupied by other open Dine-in orders.
+async function refreshTableOptions() {
+  const select = document.getElementById('orderTableId');
+  if (!select) return;
+
+  let occupiedTableIds = [];
+  try {
+    const response = await fetch(`/api/orders/openOrders/${headerRestaurantId}`);
+    if (response.ok) {
+      const data = await response.json();
+      const items = Array.isArray(data) ? data : [];
+      occupiedTableIds = items
+        .filter(order => order.order_type === 'Dine-in'
+          && Number(order.tableId || 0) > 0
+          && Number(order.id) !== Number(orderCrudState.editingOrderId))
+        .map(order => Number(order.tableId));
+    }
+  } catch (error) {
+    occupiedTableIds = [];
+  }
+
+  const occupied = new Set(occupiedTableIds);
+  const previousValue = Number(select.value || 0);
+
+  const options = ['<option value="0">No Table</option>'];
+  for (let tableNumber = 1; tableNumber <= TOTAL_TABLE_COUNT; tableNumber += 1) {
+    if (occupied.has(tableNumber)) continue;
+    options.push(`<option value="${tableNumber}">Table ${tableNumber}</option>`);
+  }
+  select.innerHTML = options.join('');
+
+  const nextValue = select.querySelector(`option[value="${previousValue}"]`) ? String(previousValue) : '0';
+  select.value = nextValue;
+  if (window.jQuery) {
+    $(select).val(nextValue).trigger('change');
+  }
+}
+
 function isCarOrderSelected() {
   const orderType = String(document.getElementById('orderType')?.value || '').trim().toLowerCase();
   return orderType === 'car';
@@ -385,6 +425,9 @@ function setOrderFormModeForEdit(order) {
 
   const submitButton = document.querySelector('#orderForm button[type="submit"]');
   if (submitButton) submitButton.textContent = 'Update Order';
+
+  const cancelButton = document.getElementById('cancelOrderFormButton');
+  if (cancelButton) cancelButton.hidden = true;
 }
 
 function populateOrderFormForEdit(order) {
@@ -717,6 +760,8 @@ document.addEventListener('DOMContentLoaded', () => {
   setupOrderPage();
   setDraftItems([]);
   setCarOrderFieldsVisibility();
+
+  refreshTableOptions();
 
   loadMenuItems().then(() => {
     if (orderCrudState.editingOrderId) {
