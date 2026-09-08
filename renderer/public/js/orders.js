@@ -1323,7 +1323,7 @@ function setupOrderCrud() {
       refreshCloseOrderSummary();
       try {
         printCloseOrderReceipt();
-        showSaveMessage('closeOrderPrintMessage', 'Browser print dialog opened. Select the required printer there.');
+        // showSaveMessage('closeOrderPrintMessage', 'Browser print dialog opened. Select the required printer there.');
       } catch (error) {
         showSaveMessage('closeOrderPrintMessage', error.message, true);
       }

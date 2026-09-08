@@ -10,9 +10,7 @@ const sharp = require('sharp');
 const log = require('electron-log');
 
 
-autoUpdater.logger = log;
-autoUpdater.logger.transports.file.level = 'warn'; // Only logs warnings/errors
-autoUpdater.logger.transports.console.level = 'warn'; 
+
 // Logger functions
 // --- Configure the Logger ---
 // 1. Set the maximum log file size (in bytes). Here it's 5MB. 
@@ -431,7 +429,12 @@ ipcMain.handle('list-printers', async () => {
 
 
 async function convertImageToEscPosRaster(imagePath) {
-  const absoluteImagePath = path.join(__dirname, 'renderer', 'public', imagePath.replace(/^\/+/, ''));
+  // sharp's native libvips binding can't read files packed inside app.asar,
+  // so resolve against the asar.unpacked copy when running packaged.
+  const baseDir = electronApp.isPackaged
+    ? __dirname.replace(/app\.asar$/, 'app.asar.unpacked')
+    : __dirname;
+  const absoluteImagePath = path.join(baseDir, 'renderer', 'public', imagePath.replace(/^\/+/, ''));
   const { data, info } = await sharp(absoluteImagePath)
     .resize({ width: 384, withoutEnlargement: true })
     .flatten({ background: '#ffffff' })

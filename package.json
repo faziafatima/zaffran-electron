@@ -1,13 +1,15 @@
 {
   "name": "zaffran-desktop-app",
-  "version": "1.0.5",
+  "version": "1.0.8",
   "description": "Desktop application for Zaffran Restaurant",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "rm -rf dist && electron-builder",
-    "clean": "rm -rf dist",
-    "deepclean": "rm -rf dist node_modules package-lock.json && npm install",
+    "build": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\" && electron-builder",
+    "build:win": "npm run build",
+    "cert:create": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/create-dev-certificate.ps1",
+    "clean": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\"",
+    "deepclean": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true }); require('fs').rmSync('node_modules', { recursive: true, force: true }); require('fs').rmSync('package-lock.json', { force: true })\" && npm install",
     "package": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\" && electron-packager . ElectronApp --platform=win32 --arch=x64 --out=dist --icon=resources/icon.ico",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -41,9 +43,13 @@
     "directories": {
       "output": "dist"
     },
+    "asarUnpack": [
+      "renderer/public/img/**"
+    ],
     "win": {
       "icon": "resources/icon.ico",
-      "target": "nsis"
+      "target": "nsis",
+      "signAndEditExecutable": true
     },
     "nsis": {
       "oneClick": true,
