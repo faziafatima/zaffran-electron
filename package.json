@@ -1,12 +1,11 @@
 {
   "name": "zaffran-desktop-app",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Desktop application for Zaffran Restaurant",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
     "build": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\" && electron-builder",
-    "build:win": "npm run build",
     "cert:create": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/create-dev-certificate.ps1",
     "clean": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\"",
     "deepclean": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true }); require('fs').rmSync('node_modules', { recursive: true, force: true }); require('fs').rmSync('package-lock.json', { force: true })\" && npm install",

@@ -418,7 +418,7 @@ electronApp.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) createWindow();
 });
 
-const PRINTER_NAME = "POS80 Printer(3)"; // Fallback printer name used when a restaurant has no printerName configured
+const PRINTER_NAME = "POS80 Printer"; // Fallback printer name used when a restaurant has no printerName configured
 
 // Lists the OS-registered printer names so PRINTER_NAME can be matched exactly (helps diagnose Bluetooth/offline printers)
 ipcMain.handle('list-printers', async () => {
@@ -487,7 +487,7 @@ async function convertReceiptToBuffer(receipt) {
 // Listen for a print event from the frontend renderer
 ipcMain.on('print-receipt', async (event, data, printerName) => {
 
-    console.log('Received print request with data:', data);
+    // console.log('Received print request with data:', data);
 
   if (!Array.isArray(data) || data.length === 0) {
     event.reply('print-receipt-result', { success: false, message: 'Invalid print payload' });
@@ -526,6 +526,10 @@ ipcMain.on('print-receipt', async (event, data, printerName) => {
 
 
 
+// electron-updater's default logger (console, patched to the log file above) emits
+// per-block/blockmap differential-download chatter; disable it and log only final status.
+autoUpdater.logger = null;
+
 // Optional: Customize update behavior and notifications
 autoUpdater.on('update-available', () => {
   console.log('New version found on server. Downloading in background...');
@@ -533,7 +537,7 @@ autoUpdater.on('update-available', () => {
 
 autoUpdater.on('update-downloaded', (info) => {
   // Notify the user that the update is ready
-   console.log('Update downloaded successfully.');
+   console.log(`Update downloaded successfully: version ${info.version} (${info.path || info.files?.[0]?.url || 'file'}).`);
   // dialog.showMessageBox({
   //   type: 'info',
   //   title: 'Update Ready',
