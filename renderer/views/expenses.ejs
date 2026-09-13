@@ -20,12 +20,19 @@
 
 <div id="restExp" class="tab-content active">
 <form id="expenseForm">
-  <div  class="triple-grid">
+  <div  class="four-grid">
           <div class="field"><label for="expenseDetails">Expense details</label><input id="expenseDetails" required /></div>
           <div class="field"><label for="expenseAmount">Amount</label><input id="expenseAmount" type="number" min="0" step="0.01"  required /></div>
           <div class="field"><label for="expenseDate">Date</label><input id="expenseDate" type="date" required /></div>
+          <div class="field">
+            <label for="expensePaymentMode">Payment mode</label>
+            <select id="expensePaymentMode" required>
+              <option value="cash">Cash</option>
+              <option value="upi">UPI</option>
+            </select>
+          </div>
               </div>
-          <button class="secondary" type="submit">Save Expense</button>
+          <button class="btn-primary" type="submit">Save Expense</button>
           <p class="muted" id="expenseSaveMessage"></p>
         
         </form>
@@ -34,7 +41,7 @@
           <div class="panel col">
             <table class="table">
               <thead>
-                <tr><th>Expense</th><th>Amount</th><th>Created</th><% if (role === 'Admin' || role === 'Super Admin') { %><th>Actions</th><% } %></tr>
+                <tr><th>Expense</th><th>Amount</th><th>Payment Mode</th><th>Expense Date</th><% if (role === 'Admin' || role === 'Super Admin') { %><th>Actions</th><% } %></tr>
               </thead>
               <tbody id="expensesTableBody"></tbody>
             </table>
@@ -54,7 +61,7 @@
               <div class="field"><label for="staffExpenseAmount">Expense amount</label><input id="staffExpenseAmount" type="number" min="0" step="0.01" required /></div>
               <div class="field"><label for="staffExpenseDetails">Details</label><textarea id="staffExpenseDetails" rows="2" maxlength="300" placeholder="Reason for expense" required></textarea></div>
             </div>
-              <button class="secondary" type="submit">Save expense</button>
+              <button class="btn-primary" type="submit">Save expense</button>
               <p class="muted" id="staffExpenseSaveMessage"></p>
             </form>
             <hr />

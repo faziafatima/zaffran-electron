@@ -43,7 +43,7 @@ body::before {
   background-repeat: no-repeat;
   
   /* 3. Adjust this value to change the transparency (0.0 to 1.0) */
-  opacity: 0.4; 
+  opacity: 0.8; 
   
   /* 4. Pushes the image layer behind the text content */
   z-index: -1; 
@@ -142,6 +142,9 @@ a {
 .logo-login {
   height: 100px;
   margin-top: 120px;
+      background: antiquewhite;
+    padding: 20px;
+    border-radius: 25px;
 }
 
 .logo-print {
@@ -337,6 +340,7 @@ a {
 .topbar h2 {
   margin: 0;
   font-size: 1.12rem;
+  color: #ffffff;
 }
 
 .topbar p {
@@ -1948,7 +1952,7 @@ a.button:hover {
 .page-heading {
   display: block;
   text-align: center;
-  margin: 0px auto;
+  margin: 10px auto;
   padding-bottom: 0px;
   max-width: max-content;
   font-family: 'Arial Black', Impact, sans-serif;
@@ -1956,8 +1960,8 @@ a.button:hover {
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 2px;
-  color: #2c1e18;
-  border-bottom: 4px solid #5c4033;
+  color: #ffffff;
+  border-bottom: 4px solid #bdbdbd;
 }
 
 
@@ -2011,6 +2015,7 @@ a.button:hover {
     display: flex;
     flex-wrap: wrap;
     gap: 12px;
+    color: #fff;
 }
 
 /* Base Box Style */
@@ -2412,7 +2417,7 @@ button.secondary:hover, .ghost-button:hover { background: #f8fafc; }
   font-weight: 700;
   padding: 3px;
 }
-.add-btn:hover { background: #dceaff; }
+.add-btn:hover { background: #000; }
 
 .dish-category-title {
   grid-column: 1/-1;

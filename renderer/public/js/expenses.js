@@ -15,6 +15,8 @@ function resetExpenseForm() {
   if (form) form.reset();
   const expenseDate = document.getElementById('expenseDate');
   if (expenseDate) expenseDate.value = new Date().toISOString().split('T')[0];
+  const paymentMode = document.getElementById('expensePaymentMode');
+  if (paymentMode) paymentMode.value = 'cash';
   expenseCrudState.editingId = null;
   setExpenseFormMode(false);
   showSaveMessage('expenseSaveMessage', '');
@@ -34,12 +36,16 @@ function toDateInputValue(value) {
   return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 }
 
+function formatPaymentMode(value) {
+  return value === 'upi' ? 'UPI' : 'Cash';
+}
+
 function renderExpenseTable(items) {
   const body = document.getElementById('expensesTableBody');
   if (!body) return;
 
   if (!items.length) {
-    body.innerHTML = '<tr><td colspan="4" class="empty-state">No expenses available.</td></tr>';
+    body.innerHTML = '<tr><td colspan="5" class="empty-state">No expenses available.</td></tr>';
     return;
   }
   const role = getServerContext().role || 'Guest';
@@ -47,7 +53,8 @@ function renderExpenseTable(items) {
     <tr>
       <td>${item.expenseDetails || 'Untitled expense'}</td>
       <td>${formatCurrency(item.amount)}</td>
-      <td>${formatExpenseDate(item.expenseDate)}</td>
+      <td>${formatPaymentMode(item.paymentMode)}</td>
+      <td>${formatDateTime(item.expenseDate)}</td>
         ${(role === 'Admin' || role === 'Super Admin') ? `
       <td>
         <div class="menu-actions">
@@ -77,10 +84,12 @@ function openExpenseForEdit(id) {
   const details = document.getElementById('expenseDetails');
   const amount = document.getElementById('expenseAmount');
   const expenseDate = document.getElementById('expenseDate');
+  const paymentMode = document.getElementById('expensePaymentMode');
 
   if (details) details.value = item.expenseDetails || '';
   if (amount) amount.value = item.amount ?? '';
   if (expenseDate) expenseDate.value = toDateInputValue(item.expenseDate);
+  if (paymentMode) paymentMode.value = item.paymentMode || 'cash';
 
   // toggleModal('expenseModal', 'expenseModalBackdrop', true);
 }
@@ -99,7 +108,8 @@ function buildExpensePayload() {
   return {
     expenseDetails: document.getElementById('expenseDetails')?.value?.trim(),
     amount: Number(document.getElementById('expenseAmount')?.value || 0),
-    expenseDate: document.getElementById('expenseDate')?.value || null
+    expenseDate: document.getElementById('expenseDate')?.value || null,
+    paymentMode: document.getElementById('expensePaymentMode')?.value || 'cash'
   };
 }
 

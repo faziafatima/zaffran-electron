@@ -37,7 +37,7 @@ function updateClosedOrdersSummary() {
 
   if (summaryEl) {
     if (filtered === 0) {
-      summaryEl.textContent = total ? `No matches for “${closedOrdersState.searchTerm}”` : 'No closed orders are available yet.';
+      summaryEl.textContent = total ? `No matches for “${closedOrdersState.searchTerm}”` : '';
     } else {
       summaryEl.textContent = `Showing ${startIndex}-${endIndex} of ${filtered} orders`;
     }
@@ -63,7 +63,7 @@ function renderClosedOrdersTable() {
     if (!searchTerm) return true;
     const isSplitBill = Number(order.isSplitBill || 0) === 1;
     const paymentMode = isSplitBill ? 'Split bill' : String(order.payment_mode || 'cash');
-    return [order.id, order.tableId, order.customer?.name, order.status, paymentMode]
+    return [order.strOrderId, order.tableId, order.customer?.name, order.status, paymentMode]
       .filter(value => value !== null && value !== undefined && value !== '')
       .some(value => String(value).toLowerCase().includes(searchTerm));
   });
@@ -77,7 +77,7 @@ function renderClosedOrdersTable() {
 
   if (!orders.length) {
     body.innerHTML = '<tr><td colspan="8" class="empty-state">No closed orders have been recorded yet.</td></tr>';
-    if (message) message.textContent = 'No closed orders available right now.';
+    // if (message) message.textContent = 'No closed orders available right now.';
     return;
   }
 
@@ -87,9 +87,7 @@ function renderClosedOrdersTable() {
     return;
   }
 
-  if (message) {
-    message.textContent = `${closedOrdersState.filteredItems.length} of ${orders.length} closed order${orders.length === 1 ? '' : 's'} loaded.`;
-  }
+  
 
   const pageItems = closedOrdersState.filteredItems.slice(
     (closedOrdersState.page - 1) * closedOrdersState.pageSize,
@@ -104,13 +102,13 @@ function renderClosedOrdersTable() {
 
     return `
       <tr>
-        <td>#${order.id || '000'}</td>
+        <td>${order.strOrderId || '000'}</td>
         <td>${order.tableId || '—'}</td>
         <td>${order.customer?.name || 'Walk-in guest'}</td>
         <td><span class="status-pill ${statusClass(order.status)}">${order.status || 'Paid'}</span></td>
         <td>${paymentMode}</td>
         <td>${formatCurrency(total)}</td>
-        <td>${closedAt}</td>
+        <td>${formatDateTime(closedAt)}</td>
         <td><button type="button" class="menu-action-btn blue" data-order-action="view-closed-order" data-order-id="${order.id}">View</button></td>
       </tr>
     `;
@@ -120,7 +118,7 @@ function renderClosedOrdersTable() {
 function renderClosedOrderDetails(order) {
   const content = document.getElementById('closedOrderDetailsContent');
   if (!content || !order) return;
-  console.log(order);
+
   const items = getClosedOrderItems(order);
   const subtotal = Number(order.item_price || 0);
   const taxPercentage = Number(order.tax_percentage || 0);
@@ -144,7 +142,7 @@ function renderClosedOrderDetails(order) {
 
   content.innerHTML = `
     <div class="four-grid">
-      <div class="details-card"><span>Order number</span><strong>#${order.id || '—'}</strong></div>
+      <div class="details-card"><span>Order number</span><strong>${order.strOrderId || '—'}</strong></div>
       <div class="details-card"><span>Status</span><strong><span class="status-pill ${statusClass(order.status)}">${order.status || 'Paid'}</span></strong></div>
       <div class="details-card"><span>Table</span><strong>${order.tableId || '—'}</strong></div>
       <div class="details-card"><span>Order type</span><strong>${order.order_type || 'Dine-in'}</strong></div>
@@ -215,7 +213,6 @@ function printClosedOrderReceipt(order) {
     showSaveMessage('closedOrderPrintMessage', 'Printer bridge is not available. Please restart the app.', true);
     return;
   }
-console.log('Printing closed order receipt for order:', order);
   const restaurant = JSON.parse(localStorage.getItem('restaurant_session') || '{}');
   const items = getClosedOrderItems(order);
   const subtotal = Number(order.item_price || 0);
