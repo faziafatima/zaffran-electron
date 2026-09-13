@@ -336,6 +336,7 @@ app.get('/inventory', requireAuth, async (req, res) => {
   res.render('inventory', { ...getViewContext(req, 'Inventory | RestaurantOS'), inventory });
 });
 app.get('/expenses', requireAuth, (req, res) => res.render('expenses', getViewContext(req, 'Expenses | RestaurantOS')));
+app.get('/monthly-expenses', requireAuth, (req, res) => res.render('monthly-expenses', getViewContext(req, 'Monthly Expenses | RestaurantOS')));
 app.get('/attendance', requireAuth, (req, res) => res.render('attendance', getViewContext(req, 'Attendance | RestaurantOS')));
 app.get('/staff', requireAuth, (req, res) => res.render('staff', getViewContext(req, 'Staff | RestaurantOS')));
 app.get('/roles', requireAuth, (req, res) => res.render('roles', getViewContext(req, 'Roles | RestaurantOS')));
