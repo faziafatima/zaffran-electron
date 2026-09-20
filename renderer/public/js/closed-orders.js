@@ -8,16 +8,6 @@ const closedOrdersState = {
   pageSize: 8
 };
 
-function formatDateTime(value) {
-  if (!value) return '—';
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return String(value);
-  return new Intl.DateTimeFormat('en-IN', {
-    dateStyle: 'medium',
-    timeStyle: 'short'
-  }).format(parsed);
-}
-
 function getClosedOrderItems(order) {
   return Array.isArray(order?.itemsPayload) ? order.itemsPayload : [];
 }
@@ -98,7 +88,7 @@ function renderClosedOrdersTable() {
     const total = Number(order.total_payable_amount ?? order.item_price ?? 0);
     const isSplitBill = Number(order.isSplitBill || 0) === 1;
     const paymentMode = isSplitBill ? 'Split bill' : String(order.payment_mode || 'cash').toUpperCase();
-    const closedAt = formatDateTime(order.updatedAt || order.createdAt);
+    const closedAt = formatDateTime(order.updatedAt);
 
     return `
       <tr>
@@ -108,7 +98,7 @@ function renderClosedOrdersTable() {
         <td><span class="status-pill ${statusClass(order.status)}">${order.status || 'Paid'}</span></td>
         <td>${paymentMode}</td>
         <td>${formatCurrency(total)}</td>
-        <td>${formatDateTime(closedAt)}</td>
+        <td>${closedAt}</td>
         <td><button type="button" class="menu-action-btn blue" data-order-action="view-closed-order" data-order-id="${order.id}">View</button></td>
       </tr>
     `;

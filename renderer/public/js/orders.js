@@ -687,7 +687,7 @@ function buildOrderPayload(baseOrder, items) {
     discount_amount: Number(baseOrder.discount_amount ?? 0),
     on_spot_discount: Number(baseOrder.on_spot_discount ?? 0),
     isSplitBill: Number(baseOrder.isSplitBill ?? 0),
-    payment_mode: baseOrder.payment_mode || 'cash',
+    payment_mode: baseOrder.payment_mode || 'upi',
     cash_payment: Number(baseOrder.cash_payment ?? subtotal),
     card_payment: Number(baseOrder.card_payment ?? 0),
     upi_payment: Number(baseOrder.upi_payment ?? 0),
@@ -759,7 +759,7 @@ function syncCloseOrderPaymentInputs(forceRecalculateAmounts = false) {
   const cashInput = document.getElementById('closeOrderCashPayment');
   const upiInput = document.getElementById('closeOrderUpiPayment');
   const totalPayable = Number(document.getElementById('closeOrderTotalPayable')?.value || 0);
-  const selectedMode = String(paymentModeSelect?.value || 'cash').toLowerCase();
+  const selectedMode = String(paymentModeSelect?.value || 'upi').toLowerCase();
 
   setVisibility(paymentModeField, !isSplit);
   setVisibility(singleAmountField, false);
@@ -891,6 +891,12 @@ function openCloseOrderModal(id) {
   const customerNameInput = document.getElementById('closeOrderCustomerName');
   const customerIdInput = document.getElementById('closeOrderCustomerId');
   const noTaxCheckbox = document.getElementById('closeOrderNoTax');
+  const updatePaymentStatusButton = document.getElementById('updatePaymentStatusButton');
+  const closeOrderSubmitButton = document.getElementById('closeOrderSubmitButton');
+  const isPaidNotDelivered = String(order.status || '').trim().toLowerCase() === 'paid-not-delivered';
+
+  if (updatePaymentStatusButton) updatePaymentStatusButton.hidden = isPaidNotDelivered;
+  if (closeOrderSubmitButton) closeOrderSubmitButton.textContent = isPaidNotDelivered ? 'Update & Close' : 'Pay & Close';
 
   if (noTaxCheckbox) noTaxCheckbox.checked = Boolean(order.no_tax);
 
@@ -906,8 +912,8 @@ function openCloseOrderModal(id) {
   const isSplit = Number(order.isSplitBill || 0) === 1;
   if (splitCheckbox) splitCheckbox.checked = isSplit;
 
-  const paymentMode = String(order.payment_mode || 'cash').toLowerCase();
-  if (modeInput) modeInput.value = isSplit ? 'cash' : paymentMode;
+  const paymentMode = String(order.payment_mode || 'upi').toLowerCase();
+  if (modeInput) modeInput.value = isSplit ? 'upi' : paymentMode;
 
   if (isSplit) {
     const currentCash = Number(order.cash_payment || 0);
@@ -955,7 +961,7 @@ function renderOrdersCards(items) {
 
   body.innerHTML = items.map(order => {
     const orderItems = normalizeOrderItems(order);
-    const itemCount = orderItems.reduce((total, item) => total + Number(item.quantity || 0), 0);
+    const itemCount = orderItems.length || 0;// orderItems.reduce((total, item) => total + Number(item.quantity || 0), 0);
 
     return `
       <article class="order-card panel" data-order-id="${order.id}" style="margin-top: 20px;">
@@ -965,7 +971,7 @@ function renderOrdersCards(items) {
              
            
           <span class="status-pill time">${formatDateTime(order.createdAt)}</span>
-          <span class="status-pill ${statusClass(order.status)}">${order.status || 'Pending'}</span>
+          <span class="status-pill ${statusClass(order.status)}">${order.status == 'paid-not-delivered' ? 'Paid' : order.status || 'Pending'}</span>
           <span class="status-pill info">${itemCount} dish${itemCount === 1 ? '' : 'es'}</span>
         </div>
             ${order.customer ? '<div style=""><b>Customer Name:</b> ' + order.customer.name + ' (' + order.customer.phone + ')</div>' : ''}
@@ -989,10 +995,11 @@ function renderOrdersCards(items) {
           </div>
           <div class="order-card-actions">
           <div class="menu-actions">
-            <button type="button" class="menu-action-btn edit" data-order-action="edit" data-order-id="${order.id}">Edit</button>
+          ${order.status != 'paid-not-delivered' ?
+            `<button type="button" class="menu-action-btn edit" data-order-action="edit" data-order-id="${order.id}">Edit</button>` : ''}
             <!--button type="button" class="menu-action-btn delete" data-order-action="delete" data-order-id="${order.id}">Delete</button>-->
               <button type="button" class="menu-action-btn print" data-order-action="print-kot" data-order-id="${order.id}">Print KOT</button>
-            <button type="button" class="menu-action-btn close" data-order-action="close" data-order-id="${order.id}">Pay & Close</button>
+            <button type="button" class="menu-action-btn close" data-order-action="close" data-order-id="${order.id}">${order.status != 'paid-not-delivered' ? 'Pay & Close' : 'View & Close'}</button>
           </div>
         </div>
       </article>
@@ -1367,82 +1374,92 @@ function setupOrderCrud() {
     });
   }
 
+  const submitCloseOrder = async (status, successMessage) => {
+    const closingOrder = orderCrudState.items.find(item => Number(item.id) === Number(orderCrudState.closingId));
+    if (!closingOrder) {
+      showSaveMessage('closeOrderSaveMessage', 'Order not found for closing.', true);
+      return;
+    }
+
+    const isSplit = Boolean(document.getElementById('closeOrderSplitBill')?.checked);
+    const totalPayable = Number(document.getElementById('closeOrderTotalPayable')?.value || 0);
+    const cardPayment = Number(document.getElementById('closeOrderCardPayment')?.value || 0);
+    const cashPayment = Number(document.getElementById('closeOrderCashPayment')?.value || 0);
+    const upiPayment = Number(document.getElementById('closeOrderUpiPayment')?.value || 0);
+    const cashSplit = Number(document.getElementById('closeOrderCashPayment')?.value || 0);
+    const upiSplit = Number(document.getElementById('closeOrderUpiPayment')?.value || 0);
+
+    if (isSplit && Math.abs((cashSplit + upiSplit) - totalPayable) > 0.01) {
+      showSaveMessage('closeOrderSaveMessage', 'For split payment, Cash + UPI must match total payable.', true);
+      return;
+    }
+    const paymentMode = (document.getElementById('closeOrderPaymentMode')?.value || 'upi').toLowerCase();
+    const selectedAmount = paymentMode === 'cash'
+      ? cashPayment
+      : (paymentMode === 'card' ? cardPayment : upiPayment);
+
+    if (!isSplit && Math.abs(selectedAmount - totalPayable) > 0.01) {
+      showSaveMessage('closeOrderSaveMessage', `${paymentMode.toUpperCase()} amount must match total payable.`, true);
+      return;
+    }
+    const closeSummary = refreshCloseOrderSummary(false);
+    const appliedDiscount = closeSummary?.discount || null;
+    const calculatedDiscountAmount = Number(closeSummary?.summary?.discountAmount ?? 0);
+    const onSpotDiscountAmount = Number(closeSummary?.summary?.onSpotDiscount ?? getCloseOrderOnSpotDiscount());
+    const noTax = getCloseOrderNoTax();
+    const resolvedCustomerId = await resolveCustomerForCloseOrder(Number(closingOrder.customer?.id || 0));
+    const paymentPayload = {
+      cash_payment: isSplit ? cashSplit : (paymentMode === 'cash' ? cashPayment : 0),
+      card_payment: isSplit ? 0 : (paymentMode === 'card' ? cardPayment : 0),
+      upi_payment: isSplit ? upiSplit : (paymentMode === 'upi' ? upiPayment : 0)
+    };
+    const closePayload = buildOrderPayload({
+      tableId: closingOrder.tableId,
+      order_type: closingOrder.order_type,
+      status,
+      tax_percentage: noTax ? 0 : Number(document.getElementById('closeOrderTaxPercentage')?.value || closingOrder.tax_percentage || 0),
+      discount_perc: Number(appliedDiscount?.discountPerc || 0),
+      discount_amount: calculatedDiscountAmount,
+      on_spot_discount: onSpotDiscountAmount,
+      no_tax: noTax,
+      isSplitBill: isSplit ? 1 : 0,
+      payment_mode: isSplit ? 'split' : paymentMode,
+      cash_payment: paymentPayload.cash_payment,
+      card_payment: paymentPayload.card_payment,
+      upi_payment: paymentPayload.upi_payment,
+      customerId: resolvedCustomerId
+    }, normalizeOrderItems(closingOrder));
+
+    try {
+      const response = await fetch(`/api/orders/close/${orderCrudState.closingId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(closePayload)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Close order failed with status ${response.status}`);
+      }
+
+      showSaveMessage('closeOrderSaveMessage', successMessage);
+      closeCloseOrderModal();
+      await loadOrders();
+    } catch (error) {
+      showSaveMessage('closeOrderSaveMessage', error.message, true);
+    }
+  };
+
+  const updatePaymentStatusButton = document.getElementById('updatePaymentStatusButton');
+  if (updatePaymentStatusButton) {
+    updatePaymentStatusButton.addEventListener('click', () => {
+      submitCloseOrder('paid-not-delivered', 'Payment status updated successfully.');
+    });
+  }
+
   if (closeOrderForm) {
     closeOrderForm.addEventListener('submit', async event => {
       event.preventDefault();
-
-      const closingOrder = orderCrudState.items.find(item => Number(item.id) === Number(orderCrudState.closingId));
-      if (!closingOrder) {
-        showSaveMessage('closeOrderSaveMessage', 'Order not found for closing.', true);
-        return;
-      }
-
-      const isSplit = Boolean(document.getElementById('closeOrderSplitBill')?.checked);
-      const totalPayable = Number(document.getElementById('closeOrderTotalPayable')?.value || 0);
-      const cardPayment = Number(document.getElementById('closeOrderCardPayment')?.value || 0);
-      const cashPayment = Number(document.getElementById('closeOrderCashPayment')?.value || 0);
-      const upiPayment = Number(document.getElementById('closeOrderUpiPayment')?.value || 0);
-      const cashSplit = Number(document.getElementById('closeOrderCashPayment')?.value || 0);
-      const upiSplit = Number(document.getElementById('closeOrderUpiPayment')?.value || 0);
-
-      if (isSplit && Math.abs((cashSplit + upiSplit) - totalPayable) > 0.01) {
-        showSaveMessage('closeOrderSaveMessage', 'For split payment, Cash + UPI must match total payable.', true);
-        return;
-      }
-      const paymentMode = (document.getElementById('closeOrderPaymentMode')?.value || 'cash').toLowerCase();
-      const selectedAmount = paymentMode === 'cash'
-        ? cashPayment
-        : (paymentMode === 'card' ? cardPayment : upiPayment);
-
-      if (!isSplit && Math.abs(selectedAmount - totalPayable) > 0.01) {
-        showSaveMessage('closeOrderSaveMessage', `${paymentMode.toUpperCase()} amount must match total payable.`, true);
-        return;
-      }
-      const closeSummary = refreshCloseOrderSummary(false);
-      const appliedDiscount = closeSummary?.discount || null;
-      const calculatedDiscountAmount = Number(closeSummary?.summary?.discountAmount ?? 0);
-      const onSpotDiscountAmount = Number(closeSummary?.summary?.onSpotDiscount ?? getCloseOrderOnSpotDiscount());
-      const noTax = getCloseOrderNoTax();
-      const resolvedCustomerId = await resolveCustomerForCloseOrder(Number(closingOrder.customer?.id || 0));
-      const paymentPayload = {
-        cash_payment: isSplit ? cashSplit : (paymentMode === 'cash' ? cashPayment : 0),
-        card_payment: isSplit ? 0 : (paymentMode === 'card' ? cardPayment : 0),
-        upi_payment: isSplit ? upiSplit : (paymentMode === 'upi' ? upiPayment : 0)
-      };
-      const closePayload = buildOrderPayload({
-        tableId: closingOrder.tableId,
-        order_type: closingOrder.order_type,
-        status: 'Served',
-        tax_percentage: noTax ? 0 : Number(document.getElementById('closeOrderTaxPercentage')?.value || closingOrder.tax_percentage || 0),
-        discount_perc: Number(appliedDiscount?.discountPerc || 0),
-        discount_amount: calculatedDiscountAmount,
-        on_spot_discount: onSpotDiscountAmount,
-        no_tax: noTax,
-        isSplitBill: isSplit ? 1 : 0,
-        payment_mode: isSplit ? 'split' : paymentMode,
-        cash_payment: paymentPayload.cash_payment,
-        card_payment: paymentPayload.card_payment,
-        upi_payment: paymentPayload.upi_payment,
-        customerId: resolvedCustomerId
-      }, normalizeOrderItems(closingOrder));
-
-      try {
-        const response = await fetch(`/api/orders/close/${orderCrudState.closingId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(closePayload)
-        });
-
-        if (!response.ok) {
-          throw new Error(`Close order failed with status ${response.status}`);
-        }
-
-        showSaveMessage('closeOrderSaveMessage', 'Order closed successfully.');
-        closeCloseOrderModal();
-        await loadOrders();
-      } catch (error) {
-        showSaveMessage('closeOrderSaveMessage', error.message, true);
-      }
+      await submitCloseOrder('Paid', 'Order closed successfully.');
     });
   }
 

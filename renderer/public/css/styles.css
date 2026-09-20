@@ -882,6 +882,12 @@ button.secondary {
   color: var(--info);
 }
 
+.status-pill.paid,
+.badge.paid {
+  background: #aa1010;
+  color: #fff;
+}
+
 .status-pill.time,
 .badge.time {
   background: rgb(213 213 213 / 54%);

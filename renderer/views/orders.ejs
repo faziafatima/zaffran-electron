@@ -61,7 +61,7 @@
             <!-- <div class="field"><label for="closeOrderDiscountAmount">Discount amount</label><input id="closeOrderDiscountAmount" type="number" step="0.01" min="0" readonly /></div> -->
             
             <div class="field"><label><input id="closeOrderSplitBill" type="checkbox" /> Amount split (Cash + UPI)</label></div>
-            <div class="field" id="closeOrderPaymentModeField" hidden><label for="closeOrderPaymentMode">Payment mode</label><select id="closeOrderPaymentMode"><option value="cash" selected>Cash</option><option value="card">Card</option><option value="upi">UPI</option></select></div>
+            <div class="field" id="closeOrderPaymentModeField" hidden><label for="closeOrderPaymentMode">Payment mode</label><select id="closeOrderPaymentMode"><option value="upi" selected>UPI</option><option value="cash">Cash</option><option value="card">Card</option></select></div>
             <div class="field" id="closeOrderCardField"  style="display:none;"><label for="closeOrderCardPayment">Card payment</label><input id="closeOrderCardPayment" type="number" step="0.01" min="0" value="0" /></div>
             <div class="field" id="closeOrderCashField" hidden><label for="closeOrderCashPayment">Cash payment</label><input id="closeOrderCashPayment" type="number" step="0.01" min="0" value="0" /></div>
             <div class="field" id="closeOrderUpiField" hidden><label for="closeOrderUpiPayment">UPI payment</label><input id="closeOrderUpiPayment" type="number" step="0.01" min="0" value="0" /></div>
@@ -85,7 +85,8 @@
           
           <div class="modal-actions">
             <button class="blue" type="button" id="printCloseOrderReceiptButton">Print</button>
-            <button class="green" type="submit">Confirm & Close</button>
+            <button class="blue" type="button" id="updatePaymentStatusButton">Pay & Keep Open</button>
+            <button class="green" type="submit" id="closeOrderSubmitButton">Pay & Close</button>
             <button class="ghost-button" type="button" id="cancelCloseOrderFormButton">Cancel</button>
           </div>
           <p class="muted" id="closeOrderPrintMessage"></p>

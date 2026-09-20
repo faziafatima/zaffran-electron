@@ -7,12 +7,6 @@ function formatCurrency(value) {
 }
 
 
-function statusClass(status) {
-  const normalized = String(status || '').toLowerCase();
-  if (normalized.includes('ready') || normalized.includes('available') || normalized.includes('paid')) return 'success';
-  if (normalized.includes('pending') || normalized.includes('low') || normalized.includes('incomplete')) return 'warning';
-  return 'danger';
-}
 
 const menuState = {
   items: [],

@@ -377,7 +377,7 @@ function buildOrderPayload(customerIdOverride = null) {
     discount_perc: 0,
     discount_amount: 0,
     isSplitBill: 0,
-    payment_mode: 'cash',
+    payment_mode: 'upi',
     cash_payment: subtotal,
     card_payment: 0,
     upi_payment: 0,
