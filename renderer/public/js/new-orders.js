@@ -81,13 +81,23 @@ function setCarOrderFieldsVisibility() {
   const carInput = document.getElementById('orderCarNumber');
   const phoneInput = document.getElementById('orderCustomerPhone');
   const nameInput = document.getElementById('orderCustomerName');
+  const addressField = document.getElementById('orderCustomerAddressField');
+  const addressInput = document.getElementById('orderCustomerAddress');
 
   const visible = shouldCaptureCustomerDetails();
   const showCarField = isCarOrderSelected();
+  const showAddressField = isTakeawayOrderSelected();
   if (shell) shell.hidden = !visible;
   if (carField) {
     carField.hidden = !showCarField;
     carField.style.display = showCarField ? '' : 'none';
+  }
+  if (addressField) {
+    addressField.hidden = !showAddressField;
+    addressField.style.display = showAddressField ? '' : 'none';
+  }
+  if (addressInput && !showAddressField) {
+    addressInput.value = '';
   }
 
   if (!carInput || !phoneInput || !nameInput) return;
@@ -112,11 +122,13 @@ function applyCustomerToForm(customer) {
   const nameInput = document.getElementById('orderCustomerName');
   const phoneInput = document.getElementById('orderCustomerPhone');
   const carInput = document.getElementById('orderCarNumber');
+  const addressInput = document.getElementById('orderCustomerAddress');
 
   if (idInput) idInput.value = customer?.id ? String(customer.id) : '';
   if (nameInput && customer?.name) nameInput.value = customer.name;
   if (phoneInput && customer?.phone) phoneInput.value = customer.phone;
   if (carInput && customer?.carNumber) carInput.value = customer.carNumber;
+  if (addressInput) addressInput.value = customer?.address || '';
 }
 
 async function lookupCustomerByIdentifier() {
@@ -164,6 +176,7 @@ async function resolveCustomerForCarOrder() {
   const name = String(document.getElementById('orderCustomerName')?.value || '').trim();
   const phone = normalizePhoneNumber(document.getElementById('orderCustomerPhone')?.value);
   const carNumber = normalizeCarNumber(document.getElementById('orderCarNumber')?.value);
+  const address = String(document.getElementById('orderCustomerAddress')?.value || '').trim();
 
   
   if (isCarOrderSelected() && !carNumber) {
@@ -177,7 +190,7 @@ async function resolveCustomerForCarOrder() {
   const response = await fetch('/api/customers/resolve', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, phone, carNumber: isCarOrderSelected() ? carNumber : '' })
+    body: JSON.stringify({ name, phone, address, carNumber: isCarOrderSelected() ? carNumber : '' })
   });
 
   if (!response.ok) {
@@ -438,6 +451,7 @@ function populateOrderFormForEdit(order) {
   const customerName = document.getElementById('orderCustomerName');
   const customerPhone = document.getElementById('orderCustomerPhone');
   const carNumber = document.getElementById('orderCarNumber');
+  const customerAddress = document.getElementById('orderCustomerAddress');
 
   if (orderType) orderType.value = order.order_type || 'Dine-in';
   if (orderStatus) orderStatus.value = order.status || 'Pending';
@@ -446,6 +460,7 @@ function populateOrderFormForEdit(order) {
   if (customerName) customerName.value = order.customer?.name || '';
   if (customerPhone) customerPhone.value = order.customer?.phone || '';
   if (carNumber) carNumber.value = order.customer?.carNumber || '';
+  if (customerAddress) customerAddress.value = order.customer?.address || '';
 
   $('#orderTableId').val(String(order.tableId ?? 0)).trigger('change');
 
@@ -609,10 +624,12 @@ function resetOrderForm() {
   const customerName = document.getElementById('orderCustomerName');
   const customerPhone = document.getElementById('orderCustomerPhone');
   const carNumber = document.getElementById('orderCarNumber');
+  const customerAddress = document.getElementById('orderCustomerAddress');
   if (customerId) customerId.value = '';
   if (customerName) customerName.value = '';
   if (customerPhone) customerPhone.value = '';
   if (carNumber) carNumber.value = '';
+  if (customerAddress) customerAddress.value = '';
 
   setCustomerLookupMessage('');
   setDraftItems([]);

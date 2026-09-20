@@ -11,7 +11,8 @@
     .cart-bottom .order-form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 12px 15px 0; }
     .cart-bottom .field { display: grid; gap: 4px; }
     .cart-bottom .field label { font-size: 10px; color: var(--muted); font-weight: 650; }
-    .cart-bottom .field select, .cart-bottom .field input { font-size: 11px !important; padding: 6px 8px; }
+    .cart-bottom .field select, .cart-bottom .field input, .cart-bottom .field textarea { font-size: 11px !important; padding: 6px 8px; }
+    .cart-bottom .field textarea { resize: vertical; font-family: inherit; }
     .car-order-fields {
       margin: 10px 15px 0;
       padding: 12px;
@@ -64,7 +65,7 @@
               
 
               <div class="cart-bottom">
-                <div class="order-form-grid">
+                <div class="triple-grid">
                   <div class="field"><label for="orderType">Order type</label><select id="orderType"><option value="Dine-in" selected>Dine-in</option><option value="Takeaway">Takeaway</option><option value="car">Car</option></select></div>
                   <div class="field"><label for="orderTableId">Table</label>
                   <select id="orderTableId" class="select2-js">
@@ -102,7 +103,7 @@
                 <input id="orderAmount" type="hidden" value="0" />
 
                 <div class="car-order-fields" id="carOrderFields" hidden>
-                  <div class="order-form-grid">
+                  <div class="triple-grid">
                     <div class="field" id="orderCarNumberField">
                       <label for="orderCarNumber">Car Number</label>
                       <input id="orderCarNumber" type="text" />
@@ -114,6 +115,10 @@
                     <div class="field">
                       <label for="orderCustomerName">Customer Name</label>
                       <input id="orderCustomerName" type="text" />
+                    </div>
+                    <div class="field" id="orderCustomerAddressField">
+                      <label for="orderCustomerAddress">Address</label>
+                      <textarea id="orderCustomerAddress" rows="2"></textarea>
                     </div>
                   </div>
                   <input id="orderCustomerId" type="hidden" />
