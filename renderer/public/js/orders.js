@@ -726,6 +726,9 @@ function resetCloseOrderForm() {
   const splitHint = document.getElementById('closeOrderSplitHint');
   if (splitHint) splitHint.textContent = '';
 
+  const changeMessage = document.getElementById('closeOrderChangeMessage');
+  if (changeMessage) changeMessage.textContent = '';
+
   showSaveMessage('closeOrderSaveMessage', '');
   showSaveMessage('closeOrderPrintMessage', '');
   setCloseOrderCustomerMessage('');
@@ -789,6 +792,32 @@ function syncCloseOrderPaymentInputs(forceRecalculateAmounts = false) {
 
   updateCloseOrderSplitHint();
 }
+
+function updateCloseOrderChangeDue() {
+  const changeMessage = document.getElementById('closeOrderChangeMessage');
+  const amountGivenInput = document.getElementById('closeOrderAmountGiven');
+  if (!changeMessage || !amountGivenInput) return;
+
+  const amountGivenRaw = amountGivenInput.value;
+  if (amountGivenRaw === '' || amountGivenRaw === null) {
+    changeMessage.textContent = '';
+    return;
+  }
+
+  const totalPayable = Number(document.getElementById('closeOrderTotalPayable')?.value || 0);
+  const amountGiven = Number(amountGivenRaw || 0);
+  const change = amountGiven - totalPayable;
+
+  if (change >= 0) {
+    changeMessage.textContent = `Change to return: ${formatCurrency(change)}`;
+    changeMessage.style.color = '#166534';
+  } else {
+    changeMessage.textContent = `Amount short by: ${formatCurrency(Math.abs(change))}`;
+    changeMessage.style.color = '#b91c1c';
+  }
+}
+
+document.getElementById('closeOrderAmountGiven')?.addEventListener('keyup', updateCloseOrderChangeDue);
 
 function updateCloseOrderSplitHint() {
   const splitHint = document.getElementById('closeOrderSplitHint');
@@ -937,6 +966,11 @@ function openCloseOrderModal(id) {
   if (customerNameInput) customerNameInput.value = trimValue(order.customer?.name || '');
   if (customerIdInput) customerIdInput.value = order.customer?.id ? String(order.customer.id) : '';
   setCloseOrderCustomerMessage('');
+
+  const amountGivenInput = document.getElementById('closeOrderAmountGiven');
+  if (amountGivenInput) amountGivenInput.value = '';
+  const changeMessage = document.getElementById('closeOrderChangeMessage');
+  if (changeMessage) changeMessage.textContent = '';
 
   refreshCloseOrderSummary();
   syncCloseOrderPaymentInputs(true);
