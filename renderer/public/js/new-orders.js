@@ -509,6 +509,16 @@ function renderCategories() {
   `).join('');
 }
 
+function getAvailablePortionsForDish(dish) {
+  const portions = [
+    { key: 'qtr', label: 'Qtr', price: dish?.qtr_price },
+    { key: 'half', label: 'Half', price: dish?.half_price },
+    { key: 'full', label: 'Full', price: dish?.full_price }
+  ].filter(portion => Number(portion.price || 0) > 0);
+
+  return portions.length ? portions : [{ key: 'full', label: 'Full', price: 0 }];
+}
+
 function renderDishCard(dish) {
   const portions = [
     { key: 'qtr', label: 'Qtr', price: dish.qtr_price },
@@ -523,17 +533,21 @@ function renderDishCard(dish) {
     `<option value="${portion.key}">${showLabels ? `${portion.label} - ` : ''}${formatCurrency(Number(portion.price || 0))}</option>`
   )).join('');
 
-  return `
-    <div class="menu-card" data-dish-id="${dish.id}">
-      <div class="menu-thumb"><img src="${getDishImageSrc(dish)}" alt="${dish.name || 'Dish'}" /></div>
-      <div class="menu-card-body">
-        <div class="menu-item-name">${dish.name || 'Unnamed dish'}</div>
-        <div class="menu-item-category">${dish.category || 'Uncategorized'}</div>
-        <select data-dish-portion="${dish.id}">${options}</select>
-        <div class="menu-item-footer">
+  var footerDet = '';
+
+  if(dish.category.toLowerCase() === 'breads') {
+    footerDet = `<div class="menu-item-footer">
           <input type="number" data-dish-qty="${dish.id}" min="1" value="1" style="width:44px;">
           <button type="button" class="add-btn" data-dish-add="${dish.id}">+</button>
-        </div>
+        </div>`;
+  }
+
+  return `
+    <div class="menu-card" data-dish-id="${dish.id}" data-dish-card="${dish.id}">
+      <div class="menu-thumb" data-dish-image="${dish.id}"><img src="${getDishImageSrc(dish)}" alt="${dish.name || 'Dish'}" /></div>
+      <div class="menu-card-body">
+        <div class="menu-item-name">${dish.name || 'Unnamed dish'}</div>
+        ${footerDet}
       </div>
     </div>
   `;
@@ -597,6 +611,87 @@ function renderDishes(filter = orderCrudState.searchTerm) {
   dishList.innerHTML = favouritesSection + categorySections;
 }
 
+let activePortionPopup = null;
+const dishImageClickTimers = new Map();
+const dishImageLastPortions = new Map();
+
+function closePortionPopup() {
+  if (!activePortionPopup) return;
+  activePortionPopup.remove();
+  activePortionPopup = null;
+  document.removeEventListener('click', closePortionPopupOnOutsideClick, true);
+}
+
+function closePortionPopupOnOutsideClick(event) {
+  if (activePortionPopup && !activePortionPopup.contains(event.target)) closePortionPopup();
+}
+
+function showPortionPopup(dishId, anchor, portions) {
+  closePortionPopup();
+  const popup = document.createElement('div');
+  popup.className = 'portion-popup';
+  popup.innerHTML = portions.map(portion => `
+    <button type="button" class="portion-popup-option" data-portion="${portion.key}">
+      ${portion.label} - ${formatCurrency(Number(portion.price || 0))}
+    </button>
+  `).join('');
+
+  popup.addEventListener('click', event => {
+    const option = event.target.closest('[data-portion]');
+    if (!option) return;
+    const portion = normalizePortion(option.getAttribute('data-portion'));
+    dishImageLastPortions.set(Number(dishId), portion);
+    closePortionPopup();
+    addItemToDraft(dishId, 1, portion);
+  });
+
+  document.body.appendChild(popup);
+  const rect = anchor.getBoundingClientRect();
+  popup.style.top = `${window.scrollY + rect.bottom + 4}px`;
+  popup.style.left = `${window.scrollX + rect.left}px`;
+  activePortionPopup = popup;
+  setTimeout(() => document.addEventListener('click', closePortionPopupOnOutsideClick, true), 0);
+}
+
+function addDishFromImage(dishId, anchor) {
+  const dish = getMenuItemById(dishId);
+  if (!dish) return;
+  const portions = getAvailablePortionsForDish(dish);
+  if (portions.length > 1) {
+    showPortionPopup(dishId, anchor, portions);
+    return;
+  }
+  dishImageLastPortions.set(Number(dishId), portions[0].key);
+  addItemToDraft(dishId, 1, portions[0].key);
+}
+
+function increaseDishFromImage(dishId, anchor) {
+  const dish = getMenuItemById(dishId);
+  if (!dish) return;
+  const portions = getAvailablePortionsForDish(dish);
+  const portion = dishImageLastPortions.get(Number(dishId));
+  if (portions.length > 1 && !portion) {
+    showPortionPopup(dishId, anchor, portions);
+    return;
+  }
+  addItemToDraft(dishId, 1, portion || portions[0].key);
+}
+
+function handleDishImageClick(dishId, anchor) {
+  const key = Number(dishId);
+  const pending = dishImageClickTimers.get(key);
+  if (pending) {
+    clearTimeout(pending);
+    dishImageClickTimers.delete(key);
+    increaseDishFromImage(key, anchor);
+    return;
+  }
+  dishImageClickTimers.set(key, setTimeout(() => {
+    dishImageClickTimers.delete(key);
+    addDishFromImage(key, anchor);
+  }, 260));
+}
+
 async function loadMenuItems() {
   const response = await fetch(`/api/menu/active/${headerRestaurantId}`);
   if (!response.ok) {
@@ -641,6 +736,7 @@ function setupOrderPage() {
   const dishList = document.getElementById('dish-list');
   const categoryList = document.getElementById('categoryList');
   const searchInput = document.getElementById('search');
+  const clearSearchButton = document.getElementById('clearSearch');
   const draftItemsContainer = document.getElementById('orderDraftItems');
   const cancelButton = document.getElementById('cancelOrderFormButton');
   const form = document.getElementById('orderForm');
@@ -652,7 +748,8 @@ function setupOrderPage() {
     categoryList.addEventListener('click', event => {
       const button = event.target.closest('[data-category]');
       if (!button) return;
-
+      searchInput.value = '';
+      renderDishes('');
       orderCrudState.activeCategory = button.getAttribute('data-category') || 'All';
       renderCategories();
       renderDishes();
@@ -685,26 +782,37 @@ function setupOrderPage() {
     });
   }
 
+  if (clearSearchButton && searchInput) {
+    clearSearchButton.addEventListener('click', () => {
+      searchInput.value = '';
+      renderDishes('');
+      searchInput.focus();
+    });
+  }
+
   if (dishList) {
     dishList.addEventListener('click', event => {
       const addButton = event.target.closest('[data-dish-add]');
-      if (!addButton) return;
+      if (addButton) {
+        const dishId = Number(addButton.getAttribute('data-dish-add') || 0);
+        const portionSelect = document.querySelector(`[data-dish-portion="${dishId}"]`);
+        const qtyInput = document.querySelector(`[data-dish-qty="${dishId}"]`);
 
-      const dishId = Number(addButton.getAttribute('data-dish-add') || 0);
-      const portionSelect = document.querySelector(`[data-dish-portion="${dishId}"]`);
-      const qtyInput = document.querySelector(`[data-dish-qty="${dishId}"]`);
-
-      const portion = normalizePortion(portionSelect?.value);
-      const quantity = Math.max(1, Number(qtyInput?.value || 1));
-
-      const added = addItemToDraft(dishId, quantity, portion);
-      if (!added) {
-        showSaveMessage('orderSaveMessage', 'Unable to add this dish.', true);
+        const portion = normalizePortion(portionSelect?.value);
+        const quantity = Math.max(1, Number(qtyInput?.value || 1));
+        const added = addItemToDraft(dishId, quantity, portion);
+        if (!added) showSaveMessage('orderSaveMessage', 'Unable to add this dish.', true);
         return;
       }
 
-    //   if (qtyInput) qtyInput.value = '1';
-    //   showSaveMessage('orderSaveMessage', `${getPortionLabel(portion)} portion added to draft order.`);
+      if (event.target.closest('button, input, select, textarea, option')) return;
+
+      const card = event.target.closest('[data-dish-card]');
+      if (card) {
+        handleDishImageClick(Number(card.getAttribute('data-dish-card') || 0), card);
+        return;
+      }
+
     });
   }
 
