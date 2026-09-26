@@ -44,6 +44,28 @@ async function refreshTableOptions() {
   if (window.jQuery) {
     $(select).val(nextValue).trigger('change');
   }
+  syncTableSelectionForOrderType();
+}
+
+function syncTableSelectionForOrderType() {
+  const select = document.getElementById('orderTableId');
+  if (!select) return;
+
+  let tableId = '0';
+  if (String(document.getElementById('orderType')?.value || '').trim().toLowerCase() === 'dine-in') {
+    const currentOption = select.querySelector(`option[value="${select.value}"]`);
+    if (Number(select.value) > 0 && currentOption) {
+      tableId = select.value;
+    } else {
+      const firstAvailableTable = Array.from(select.options).find(option => Number(option.value) > 0);
+      if (firstAvailableTable) tableId = firstAvailableTable.value;
+    }
+  }
+
+  select.value = tableId;
+  if (window.jQuery) {
+    $(select).val(tableId).trigger('change');
+  }
 }
 
 function isCarOrderSelected() {
@@ -102,7 +124,7 @@ function setCarOrderFieldsVisibility() {
 
   if (!carInput || !phoneInput || !nameInput) return;
 
-  carInput.required = showCarField;
+  // carInput.required = showCarField;
   // phoneInput.required = visible;
   // nameInput.required = visible;
 
@@ -179,11 +201,11 @@ async function resolveCustomerForCarOrder() {
   const address = String(document.getElementById('orderCustomerAddress')?.value || '').trim();
 
   
-  if (isCarOrderSelected() && !carNumber) {
-    return;
-  }
+  // if (isCarOrderSelected() && !carNumber) {
+  //   return;
+  // }
   
-  if (!name && !phone) {
+  if (!phone) {
     return;
   }
 
@@ -759,6 +781,7 @@ function setupOrderPage() {
   if (orderType) {
     orderType.addEventListener('change', () => {
       setCarOrderFieldsVisibility();
+      syncTableSelectionForOrderType();
     });
   }
 
@@ -850,6 +873,12 @@ function setupOrderPage() {
         return;
       }
 
+      if (String(orderType?.value || '').trim().toLowerCase() === 'dine-in'
+        && Number(document.getElementById('orderTableId')?.value || 0) <= 0) {
+        showSaveMessage('orderSaveMessage', 'Select an available table for this Dine-in order.', true);
+        return;
+      }
+
       const isEdit = orderCrudState.editingOrderId !== null;
       const url = isEdit ? `/api/orders/${orderCrudState.editingOrderId}` : `/api/orders/${headerRestaurantId}`;
       const method = isEdit ? 'PUT' : 'POST';
@@ -886,9 +915,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setDraftItems([]);
   setCarOrderFieldsVisibility();
 
-  refreshTableOptions();
-
-  loadMenuItems().then(() => {
+  refreshTableOptions().then(() => loadMenuItems()).then(() => {
     if (orderCrudState.editingOrderId) {
       return loadOrderForEdit(orderCrudState.editingOrderId).catch(error => {
         showSaveMessage('orderSaveMessage', error.message || 'Unable to load order for editing.', true);

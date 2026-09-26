@@ -26,21 +26,25 @@ function setCloseOrderCustomerMessage(message, isError = false) {
 function applyResolvedCustomer(customer) {
   const phoneInput = document.getElementById('closeOrderCustomerPhone');
   const nameInput = document.getElementById('closeOrderCustomerName');
+  const addressInput = document.getElementById('closeOrderCustomerAddress');
   const idInput = document.getElementById('closeOrderCustomerId');
 
   if (phoneInput && customer?.phone) phoneInput.value = customer.phone;
   if (nameInput) nameInput.value = customer?.name || '';
+  if (addressInput) addressInput.value = customer?.address || '';
   if (idInput) idInput.value = customer?.id ? String(customer.id) : '';
 }
 
 async function lookupCustomerByPhone(phoneValue, silentIfMissing = false) {
   const phone = trimValue(phoneValue);
-  const nameInput = document.getElementById('closeOrderCustomerName');
+  const nameInput = document.getElementById('closeOrderCustomerName');  
+  const addressInput = document.getElementById('closeOrderCustomerAddress');
   const idInput = document.getElementById('closeOrderCustomerId');
 
   if (!phone) {
     if (idInput) idInput.value = '';
     if (nameInput) nameInput.value = '';
+    if (addressInput) addressInput.value = '';
     if (!silentIfMissing) setCloseOrderCustomerMessage('');
     return null;
   }
@@ -76,18 +80,20 @@ async function resolveCustomerForCloseOrder(defaultCustomerId = 0) {
   const phoneInput = document.getElementById('closeOrderCustomerPhone');
   const nameInput = document.getElementById('closeOrderCustomerName');
   const idInput = document.getElementById('closeOrderCustomerId');
+  const addressInput = document.getElementById('closeOrderCustomerAddress');
 
   const phone = trimValue(phoneInput?.value);
   const name = trimValue(nameInput?.value);
+  const address = trimValue(addressInput?.value);
 
-  if (!phone && !name) {
+  if (!phone) {
     return Number(defaultCustomerId || 0);
   }
 
  const response = await fetch('/api/customers/resolve', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ phone, name })
+    body: JSON.stringify({ phone, name, address })
   });
 
   let responseBody = null;
@@ -520,6 +526,7 @@ function getCloseOrderCustomerSnapshot(order) {
   const formPhone = trimValue(document.getElementById('closeOrderCustomerPhone')?.value);
   const formName = trimValue(document.getElementById('closeOrderCustomerName')?.value);
   const formId = trimValue(document.getElementById('closeOrderCustomerId')?.value);
+  const formAddress = trimValue(document.getElementById('closeOrderCustomerAddress')?.value);
 
   const customerName = formName || trimValue(order?.customer?.name || '');
   const customerPhone = formPhone || trimValue(order?.customer?.phone || '');
@@ -528,7 +535,8 @@ function getCloseOrderCustomerSnapshot(order) {
   return {
     customerName: customerName || 'Walk-in guest',
     customerPhone,
-    customerId
+    customerId,
+    customerAddress: formAddress || trimValue(order?.customer?.address || '')
   };
 }
 
@@ -918,6 +926,7 @@ function openCloseOrderModal(id) {
   const upiInput = document.getElementById('closeOrderUpiPayment');
   const customerPhoneInput = document.getElementById('closeOrderCustomerPhone');
   const customerNameInput = document.getElementById('closeOrderCustomerName');
+  const addressInput = document.getElementById('closeOrderCustomerAddress');
   const customerIdInput = document.getElementById('closeOrderCustomerId');
   const noTaxCheckbox = document.getElementById('closeOrderNoTax');
   const updatePaymentStatusButton = document.getElementById('updatePaymentStatusButton');
@@ -947,7 +956,7 @@ function openCloseOrderModal(id) {
   if (isSplit) {
     const currentCash = Number(order.cash_payment || 0);
     const currentUpi = Number(order.upi_payment || 0);
-    if (cashInput) cashInput.value = totalPayable.toFixed(0);
+    if (cashInput) cashInput.value = currentCash.toFixed(0);
     if (upiInput) upiInput.value = currentUpi.toFixed(0);
     if (singleAmountInput) singleAmountInput.value = totalPayable.toFixed(0);
     if (cardInput) cardInput.value = Number(order.card_payment || 0).toFixed(0);
@@ -964,6 +973,7 @@ function openCloseOrderModal(id) {
 
   if (customerPhoneInput) customerPhoneInput.value = trimValue(order.customer?.phone || '');
   if (customerNameInput) customerNameInput.value = trimValue(order.customer?.name || '');
+  if (addressInput) addressInput.value = trimValue(order.customer?.address || '');
   if (customerIdInput) customerIdInput.value = order.customer?.id ? String(order.customer.id) : '';
   setCloseOrderCustomerMessage('');
 
@@ -973,7 +983,7 @@ function openCloseOrderModal(id) {
   if (changeMessage) changeMessage.textContent = '';
 
   refreshCloseOrderSummary();
-  syncCloseOrderPaymentInputs(true);
+  syncCloseOrderPaymentInputs();
   toggleModal('closeOrderModal', 'closeOrderModalBackdrop', true);
 }
 

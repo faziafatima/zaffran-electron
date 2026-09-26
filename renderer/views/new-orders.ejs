@@ -146,23 +146,5 @@
     <script src="/js/select2.min.js"></script>
     <script src="/js/shared.js"></script>
     <script src="/js/new-orders.js"></script>
-    <script>
-       const orderType = document.getElementById('orderType');
-       const orderTableId = document.getElementById('orderTableId');
-
-       if (orderType) {
-         orderType.addEventListener('change', () => {
-           if (isCarOrderSelected() || isTakeawayOrderSelected()) {
-             orderTableId.value = "0";
-             $('#orderTableId').val('0');
-             $('#orderTableId').trigger('change');
-           } else {
-             orderTableId.value = "1";
-             $('#orderTableId').val('1');
-             $('#orderTableId').trigger('change');
-           }
-         });
-       }
-        </script>
   </body>
 </html>

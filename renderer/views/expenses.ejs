@@ -52,22 +52,33 @@
   <div id="staffExp" class="tab-content">
     <div class="section-head"><span class="section-tag">Record cash/advance taken</span></div>
             <form id="staffExpenseForm">
-              <div  class="four-grid">
+              <div  class="five-grid">
               <div class="field">
                 <label for="staffExpenseStaffId">Staff member</label>
                 <select id="staffExpenseStaffId" required></select>
               </div>
               <div class="field"><label for="staffExpenseDate">Date</label><input id="staffExpenseDate" type="date" required /></div>
               <div class="field"><label for="staffExpenseAmount">Expense amount</label><input id="staffExpenseAmount" type="number" min="0" step="0.01" required /></div>
+              <div class="field">
+                <label for="staffExpensePaymentMode">Payment mode</label>
+                <select id="staffExpensePaymentMode" required>
+                  <option value="cash" selected>Cash</option>
+                  <option value="upi">UPI</option>
+                </select>
+              </div>
               <div class="field"><label for="staffExpenseDetails">Details</label><textarea id="staffExpenseDetails" rows="2" maxlength="300" placeholder="Reason for expense" required></textarea></div>
             </div>
-              <button class="btn-primary" type="submit">Save expense</button>
+              <button class="btn-primary" id="staffExpenseSubmitButton" type="submit">Save expense</button>
+              <button class="secondary" id="cancelStaffExpenseEditButton" type="button" hidden>Cancel edit</button>
               <p class="muted" id="staffExpenseSaveMessage"></p>
             </form>
             <hr />
             <table class="table">
               <thead>
-                <tr><th>Staff Name</th><th>Amount</th><th>Details</th><th>Date</th></tr>
+                <tr>
+                  <th>Staff Name</th><th>Amount</th><th>Payment Mode</th><th>Details</th><th>Date</th>
+                  <% if (role === 'Admin' || role === 'Manager' || role === 'Super Admin') { %><th>Actions</th><% } %>
+                </tr>
               </thead>
               <tbody id="staffExpensesTableBody"></tbody>
             </table>

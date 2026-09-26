@@ -1,3 +1,8 @@
+const staffExpenseState = {
+  items: [],
+  editingId: null
+};
+
 document.addEventListener('DOMContentLoaded', () => {
   bindCommonChrome();
   setupStaffExpenseSave();
@@ -24,6 +29,11 @@ function loadAttendanceMeta() {
     .then(meta => {
       const staffOptions = meta.staff || [];
       fillSelect('staffExpenseStaffId', staffOptions);
+      const selectStaff = document.getElementById('staffExpenseStaffId');
+      if (selectStaff) {
+        selectStaff.insertBefore(new Option('Select Staff', '-1'), selectStaff.firstChild);
+        selectStaff.value = '-1';
+      }
     })
     .catch(() => {
       showSaveMessage('staffExpenseSaveMessage', 'Unable to load staff list for expenses.', true);
@@ -41,6 +51,11 @@ function setupStaffExpenseSave() {
   const form = document.getElementById('staffExpenseForm');
   if (!form) return;
 
+  const cancelEditButton = document.getElementById('cancelStaffExpenseEditButton');
+  if (cancelEditButton) {
+    cancelEditButton.addEventListener('click', clearStaffExpenseFormForNextEntry);
+  }
+
   form.addEventListener('submit', async event => {
     event.preventDefault();
 
@@ -48,14 +63,29 @@ function setupStaffExpenseSave() {
       staffIdValue: Number(document.getElementById('staffExpenseStaffId')?.value || 0),
       dateValue: document.getElementById('staffExpenseDate')?.value,
       expenseAmount: Number(document.getElementById('staffExpenseAmount')?.value || 0),
+      paymentMode: document.getElementById('staffExpensePaymentMode')?.value || 'cash',
       expenseDetails: document.getElementById('staffExpenseDetails')?.value?.trim() || ''
     };
 
+    const isEdit = staffExpenseState.editingId !== null;
+    const url = isEdit
+      ? `/api/staff-expenses/${staffExpenseState.editingId}`
+      : `/api/staff-expenses/${headerRestaurantId}`;
+
     try {
-      await saveJson(`/api/staff-expenses/${headerRestaurantId}`, payload);
-      showSaveMessage('staffExpenseSaveMessage', 'Staff expense saved successfully.');
+      const response = await fetch(url, {
+        method: isEdit ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => ({}));
+        throw new Error(errorBody.message || `Save failed with status ${response.status}`);
+      }
+
+      showSaveMessage('staffExpenseSaveMessage', isEdit ? 'Staff expense updated successfully.' : 'Staff expense saved successfully.');
       clearStaffExpenseFormForNextEntry();
-      loadStaffExpenses();
+      await loadStaffExpenses();
     } catch (error) {
       showSaveMessage('staffExpenseSaveMessage', error.message, true);
     }
@@ -63,9 +93,12 @@ function setupStaffExpenseSave() {
 }
 
 function loadStaffExpenses() {
-  fetch(`/api/staff-expenses/${headerRestaurantId}`)
+  return fetch(`/api/staff-expenses/${headerRestaurantId}`)
     .then(res => res.json())
-    .then(data => renderStaffExpenses(data))
+    .then(data => {
+      staffExpenseState.items = Array.isArray(data) ? data : [];
+      renderStaffExpenses(staffExpenseState.items);
+    })
     .catch(() => renderStaffExpenses([]));
 }
 
@@ -74,8 +107,10 @@ function renderStaffExpenses(data) {
   if (!list) return;
 
   const records = Array.isArray(data) ? data : [];
+  const role = getServerContext().role || '';
+  const canManage = ['admin', 'manager', 'super admin'].includes(role.toLowerCase());
   if (!records.length) {
-    list.innerHTML = '<tr><td colspan="4" class="empty-state">No staff expenses recorded yet.</td></tr>';
+    list.innerHTML = `<tr><td colspan="${canManage ? 6 : 5}" class="empty-state">No staff expenses recorded yet.</td></tr>`;
     return;
   }
 
@@ -83,12 +118,69 @@ function renderStaffExpenses(data) {
     <tr>
       <td>${item.staffMember?.fullName || 'Staff member'}</td>
       <td>${formatCurrency(Number(item.expenseAmount || 0))}</td>
+      <td>${String(item.paymentMode || 'cash').toLowerCase() === 'upi' ? 'UPI' : 'Cash'}</td>
       <td>${item.expenseDetails ? escapeHtml(item.expenseDetails) : '—'}</td>
       <td>${item.date || '—'}</td>
+      ${canManage ? `<td><div class="menu-actions">
+        <button type="button" class="menu-action-btn edit" data-staff-expense-action="edit" data-staff-expense-id="${item.id}">Edit</button>
+        <button type="button" class="menu-action-btn delete" data-staff-expense-action="delete" data-staff-expense-id="${item.id}">Delete</button>
+      </div></td>` : ''}
     </tr>
   `).join('');
+
+  list.onclick = async event => {
+    const button = event.target.closest('[data-staff-expense-action]');
+    if (!button) return;
+    const id = Number(button.getAttribute('data-staff-expense-id'));
+    const action = button.getAttribute('data-staff-expense-action');
+
+    try {
+      if (action === 'edit') {
+        editStaffExpense(id);
+      } else if (action === 'delete') {
+        await deleteStaffExpense(id);
+      }
+    } catch (error) {
+      showSaveMessage('staffExpenseSaveMessage', error.message || 'Unable to process staff expense.', true);
+    }
+  };
 }
 
+function editStaffExpense(id) {
+  const item = staffExpenseState.items.find(expense => Number(expense.id) === id);
+  if (!item) return;
+
+  staffExpenseState.editingId = item.id;
+  document.getElementById('staffExpenseStaffId').value = String(item.staffMember?.id || '');
+  document.getElementById('staffExpenseDate').value = item.date || '';
+  document.getElementById('staffExpenseAmount').value = item.expenseAmount ?? '';
+  document.getElementById('staffExpensePaymentMode').value = item.paymentMode || 'cash';
+  document.getElementById('staffExpenseDetails').value = item.expenseDetails || '';
+  setStaffExpenseFormMode(true);
+  showSaveMessage('staffExpenseSaveMessage', 'Editing staff expense.');
+  document.getElementById('staffExpenseForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+async function deleteStaffExpense(id) {
+  if (!window.confirm('Delete this staff expense?')) return;
+
+  const response = await fetch(`/api/staff-expenses/${id}`, { method: 'DELETE' });
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => ({}));
+    throw new Error(errorBody.message || `Delete failed with status ${response.status}`);
+  }
+
+  if (Number(staffExpenseState.editingId) === id) clearStaffExpenseFormForNextEntry();
+  showSaveMessage('staffExpenseSaveMessage', 'Staff expense deleted successfully.');
+  await loadStaffExpenses();
+}
+
+function setStaffExpenseFormMode(isEdit) {
+  const submitButton = document.getElementById('staffExpenseSubmitButton');
+  const cancelButton = document.getElementById('cancelStaffExpenseEditButton');
+  if (submitButton) submitButton.textContent = isEdit ? 'Update expense' : 'Save expense';
+  if (cancelButton) cancelButton.hidden = !isEdit;
+}
 
 
 
@@ -98,6 +190,7 @@ function clearStaffExpenseFormForNextEntry() {
   const staffSelect = document.getElementById('staffExpenseStaffId');
   const dateInput = document.getElementById('staffExpenseDate');
   const amountInput = document.getElementById('staffExpenseAmount');
+  const paymentModeInput = document.getElementById('staffExpensePaymentMode');
   const detailsInput = document.getElementById('staffExpenseDetails');
 
   if (staffSelect && staffSelect.options.length > 0) {
@@ -105,7 +198,10 @@ function clearStaffExpenseFormForNextEntry() {
   }
   if (dateInput) dateInput.value = new Date().toISOString().slice(0, 10);
   if (amountInput) amountInput.value = '0';
+  if (paymentModeInput) paymentModeInput.value = 'cash';
   if (detailsInput) detailsInput.value = '';
+  staffExpenseState.editingId = null;
+  setStaffExpenseFormMode(false);
 }
 
 

@@ -130,6 +130,7 @@ function renderDayCashHistory(items) {
         <td>${formatBusinessDate(item?.businessDate)}</td>
         <td>${item?.openingCash == null ? '-' : formatCurrency(item.openingCash)}</td>
         <td>${formatCurrency(item?.cashIncome || 0)}</td>
+        <td>${formatCurrency(item?.cashExpense || 0)}</td>
         <td>${item?.expectedClosingCash == null ? '-' : formatCurrency(item.expectedClosingCash)}</td>
         <td>${item?.closingCash == null ? '-' : formatCurrency(item.closingCash)}</td>
         <td>${item?.discrepancy == null ? '-' : formatCurrency(item.discrepancy)}</td>
