@@ -27,9 +27,9 @@
                 <label for="attendanceStaffId">Staff member</label>
                 <select id="attendanceStaffId" required></select>
               </div>
-              <div class="field"><label for="attendanceDate">Date</label><input id="attendanceDate" type="date" min="<%= minDate %>" required /></div>
+              <div class="field"><label for="attendanceDate">Date</label><input id="attendanceDate" type="date" <%= restrictAttendanceToToday ? 'min=' + minDate : '' %> required /></div>
               <div class="field" id="attendanceCheckInField"><label for="attendanceCheckIn">Check-in</label><input id="attendanceCheckIn" type="time" required /></div>
-              <div class="field" id="attendanceCheckOutField"><label for="attendanceCheckOut">Check-out</label><input id="attendanceCheckOut" type="time" required /></div>
+              <div class="field" id="attendanceCheckOutField"><label for="attendanceCheckOut">Check-out</label><input id="attendanceCheckOut" type="time" /></div>
               <div class="field">
                 <label for="attendanceStatus">Status</label>
                 <select id="attendanceStatus">
@@ -48,6 +48,7 @@
               <p class="muted" id="attendanceSaveMessage"></p>
             </form>
           </div>
+          <div class="double-grid" style="gap: 20px; margin-top: 20px;">
         <section class="row">
           
           <div class="panel col">
@@ -58,7 +59,6 @@
               <span><i class="legend-dot leave"></i>Leave</span>
             </div>
             <div id="attendanceWeekGraph" class="attendance-week-graph"></div>
-            <div id="attendanceList" class="list"></div>
           </div>
           <!-- <div class="panel col">
             <div class="section-head"><h3>Staff expenses</h3><span class="section-tag">Record cash/advance taken</span></div>
@@ -76,6 +76,29 @@
             <div id="staffExpenseList" class="list"></div>
           </div> -->
         </section>
+        <section class="panel">
+          <div class="section-head"><h3>Attendance records</h3><span class="section-tag" id="attendanceCount"></span><button type="button" class="secondary" style="float:right;" id="attendanceExportButton">Export CSV</button></div>
+          <div class="row-grid-attendance">
+            <div class="field">
+              <label for="attendanceFilterStaffId">Staff member</label>
+              <select id="attendanceFilterStaffId"><option value="">All staff</option></select>
+            </div>
+            <div class="field"><label for="attendanceFilterFrom">From</label><input id="attendanceFilterFrom" type="date" /></div>
+            <div class="field"><label for="attendanceFilterTo">To</label><input id="attendanceFilterTo" type="date" /></div>
+            <div class="field"><button class="btn-primary" type="button" id="attendanceSearchButton">Search</button></div>
+          </div>
+          <p class="muted" id="attendanceSearchMessage"></p>
+          <div class="table-wrap attendance-table-wrap">
+            <table class="table">
+              <thead>
+                <tr><th>Date</th><th>Staff</th><th>Status</th><th>Check-in</th><th>Check-out</th><th>Remarks</th></tr>
+              </thead>
+              <tbody id="attendanceList"></tbody>
+            </table>
+          </div>
+          <div id="attendancePager" class="attendance-pager" hidden></div>
+        </section>
+        </div>
       </main>
     </div>
     <script>
