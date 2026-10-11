@@ -77,6 +77,8 @@ app.use('/css', express.static(path.join(__dirname, 'renderer','css')));
 app.use('/js', express.static(path.join(__dirname, 'renderer','js')));
 app.use('/images', express.static(path.join(__dirname, 'renderer','images')));
 app.use('/fonts', express.static(path.join(__dirname, 'renderer','fonts')));
+// Set to true to block adding attendance for previous dates.
+const RESTRICT_ATTENDANCE_TO_TODAY = false;
 
 function getViewContext(req, title) {
   const sessionUser = req.session?.user || null;
@@ -347,7 +349,10 @@ app.get('/inventory', requireAuth, async (req, res) => {
 });
 app.get('/expenses', requireAuth, (req, res) => res.render('expenses', getViewContext(req, 'Expenses | RestaurantOS')));
 app.get('/monthly-expenses', requireAuth, (req, res) => res.render('monthly-expenses', getViewContext(req, 'Monthly Expenses | RestaurantOS')));
-app.get('/attendance', requireAuth, (req, res) => res.render('attendance', getViewContext(req, 'Attendance | RestaurantOS')));
+app.get('/attendance', requireAuth, (req, res) => res.render('attendance', {
+  ...getViewContext(req, 'Attendance | RestaurantOS'),
+  restrictAttendanceToToday: RESTRICT_ATTENDANCE_TO_TODAY
+}));
 app.get('/staff', requireAuth, (req, res) => res.render('staff', getViewContext(req, 'Staff | RestaurantOS')));
 app.get('/roles', requireAuth, (req, res) => res.render('roles', getViewContext(req, 'Roles | RestaurantOS')));
 app.get('/users', requireAuth, (req, res) => res.render('users', getViewContext(req, 'Users | RestaurantOS')));
