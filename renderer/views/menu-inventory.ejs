@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body data-role="<%= role %>" data-user="<%= user %>">
+    <%- include('../partials/header.ejs') %>
+    <div class="app-shell">
+      <%- include('../partials/sidebar.ejs') %>
+      <main class="main-content">
+        <div class="topbar">
+          <div class="page-heading">Menu Inventory</div>
+          <div class="topbar-actions"><a href="/masterPages" class="button">Back</a></div>
+        </div>
+        <section class="panel">
+          <div class="section-head">
+            <div><h3>Available Servings</h3></div>
+            <div class="menu-toolbar"><input id="menuInventorySearch" class="menu-search" type="search" placeholder="Search dishes" aria-label="Search dishes" /></div>
+          </div>
+          <div class="table-wrap">
+            <table class="table">
+              <thead><tr><th>Dish</th><th>Category</th><th>Availability</th><th>Servings in stock</th><th>Action</th></tr></thead>
+              <tbody id="menuInventoryTableBody"></tbody>
+            </table>
+          </div>
+          <div class="table-footer">
+            <span class="muted" id="menuInventoryPageSummary">Showing 0 of 0 dishes</span>
+            <div class="pagination-controls">
+              <button type="button" class="secondary pagination-button" id="menuInventoryPrevButton">Previous</button>
+              <span class="muted" id="menuInventoryPageIndicator">Page 0 of 0</span>
+              <button type="button" class="secondary pagination-button" id="menuInventoryNextButton">Next</button>
+            </div>
+          </div>
+          <p class="muted" id="menuInventoryMessage"></p>
+        </section>
+      </main>
+    </div>
+    <script src="/js/shared.js"></script>
+    <script src="/js/menu-inventory.js"></script>
+  </body>
+</html>

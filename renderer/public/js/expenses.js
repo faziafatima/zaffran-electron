@@ -1,7 +1,57 @@
 const expenseCrudState = {
   items: [],
-  editingId: null
+  filteredItems: [],
+  editingId: null,
+  searchTerm: '',
+  dateFrom: '',
+  dateTo: '',
+  page: 1,
+  pageSize: 8
 };
+
+function isExpenseWithinDateRange(value) {
+  const date = String(value || '').slice(0, 10);
+  return Boolean(date)
+    && (!expenseCrudState.dateFrom || date >= expenseCrudState.dateFrom)
+    && (!expenseCrudState.dateTo || date <= expenseCrudState.dateTo);
+}
+
+async function downloadExpenseReport() {
+  const params = new URLSearchParams();
+  if (expenseCrudState.dateFrom) params.set('from', expenseCrudState.dateFrom);
+  if (expenseCrudState.dateTo) params.set('to', expenseCrudState.dateTo);
+  const query = params.toString();
+  const response = await fetch(`/api/expenses/export/${headerRestaurantId}${query ? `?${query}` : ''}`);
+  if (!response.ok) throw new Error(`Unable to download report (${response.status}).`);
+
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(await response.blob());
+  link.download = 'restaurant-expenses.csv';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(link.href);
+}
+
+function updateExpensePagination() {
+  const summary = document.getElementById('expensesPageSummary');
+  const indicator = document.getElementById('expensesPageIndicator');
+  const previousButton = document.getElementById('expensesPrevButton');
+  const nextButton = document.getElementById('expensesNextButton');
+  const filtered = expenseCrudState.filteredItems.length;
+  const totalPages = Math.max(1, Math.ceil(filtered / expenseCrudState.pageSize));
+  const start = filtered ? ((expenseCrudState.page - 1) * expenseCrudState.pageSize) + 1 : 0;
+  const end = Math.min(expenseCrudState.page * expenseCrudState.pageSize, filtered);
+
+  if (summary) {
+    summary.textContent = filtered
+      ? `Showing ${start}-${end} of ${filtered} expenses`
+      : (expenseCrudState.items.length ? 'No expenses match your search.' : 'No expenses available.');
+  }
+  if (indicator) indicator.textContent = `Page ${filtered ? expenseCrudState.page : 0} of ${filtered ? totalPages : 0}`;
+  if (previousButton) previousButton.disabled = expenseCrudState.page <= 1 || !filtered;
+  if (nextButton) nextButton.disabled = expenseCrudState.page >= totalPages || !filtered;
+}
 
 function setExpenseFormMode(isEdit) {
   const title = document.getElementById('expenseModalTitle');
@@ -44,12 +94,29 @@ function renderExpenseTable(items) {
   const body = document.getElementById('expensesTableBody');
   if (!body) return;
 
-  if (!items.length) {
-    body.innerHTML = '<tr><td colspan="5" class="empty-state">No expenses available.</td></tr>';
+  expenseCrudState.items = Array.isArray(items) ? items : [];
+  const query = expenseCrudState.searchTerm.trim().toLowerCase();
+  expenseCrudState.filteredItems = expenseCrudState.items.filter(item => {
+    const matchesSearch = !query || [item.expenseDetails, item.paymentMode, item.expenseDate, item.amount]
+      .filter(value => value !== null && value !== undefined)
+      .some(value => String(value).toLowerCase().includes(query));
+    return matchesSearch && isExpenseWithinDateRange(item.expenseDate);
+  });
+  const totalPages = Math.max(1, Math.ceil(expenseCrudState.filteredItems.length / expenseCrudState.pageSize));
+  if (expenseCrudState.page > totalPages) expenseCrudState.page = totalPages;
+  const pageItems = expenseCrudState.filteredItems.slice(
+    (expenseCrudState.page - 1) * expenseCrudState.pageSize,
+    expenseCrudState.page * expenseCrudState.pageSize
+  );
+
+  updateExpensePagination();
+
+  if (!pageItems.length) {
+    body.innerHTML = `<tr><td colspan="5" class="empty-state">${expenseCrudState.items.length ? 'No expenses match your search.' : 'No expenses available.'}</td></tr>`;
     return;
   }
   const role = getServerContext().role || 'Guest';
-  body.innerHTML = items.map(item => `
+  body.innerHTML = pageItems.map(item => `
     <tr>
       <td>${item.expenseDetails || 'Untitled expense'}</td>
       <td>${formatCurrency(item.amount)}</td>
@@ -70,8 +137,7 @@ function renderExpenseTable(items) {
 async function loadExpenses() {
   const response = await fetch(`/api/expenses/${headerRestaurantId}`);
   const data = await response.json();
-  expenseCrudState.items = Array.isArray(data) ? data : [];
-  renderExpenseTable(expenseCrudState.items);
+  renderExpenseTable(data);
 }
 
 function openExpenseForEdit(id) {
@@ -120,6 +186,12 @@ function setupExpenseCrud() {
   const closeButton = document.getElementById('closeExpenseFormButton');
   const cancelButton = document.getElementById('cancelExpenseFormButton');
   const backdrop = document.getElementById('expenseModalBackdrop');
+  const searchInput = document.getElementById('expensesSearchInput');
+  const previousButton = document.getElementById('expensesPrevButton');
+  const nextButton = document.getElementById('expensesNextButton');
+  const fromInput = document.getElementById('expensesDateFrom');
+  const toInput = document.getElementById('expensesDateTo');
+  const downloadButton = document.getElementById('downloadExpensesReportButton');
 
   const closeModal = () => {
     resetExpenseForm();
@@ -136,6 +208,49 @@ function setupExpenseCrud() {
   if (closeButton) closeButton.addEventListener('click', closeModal);
   if (cancelButton) cancelButton.addEventListener('click', closeModal);
   if (backdrop) backdrop.addEventListener('click', closeModal);
+
+  if (searchInput) {
+    searchInput.addEventListener('input', event => {
+      expenseCrudState.searchTerm = event.target.value || '';
+      expenseCrudState.page = 1;
+      renderExpenseTable(expenseCrudState.items);
+    });
+  }
+  [fromInput, toInput].filter(Boolean).forEach(input => {
+    input.addEventListener('change', () => {
+      expenseCrudState.dateFrom = fromInput?.value || '';
+      expenseCrudState.dateTo = toInput?.value || '';
+      expenseCrudState.page = 1;
+      renderExpenseTable(expenseCrudState.items);
+    });
+  });
+  if (downloadButton) {
+    downloadButton.addEventListener('click', async () => {
+      try {
+        await downloadExpenseReport();
+        showSaveMessage('expenseSaveMessage', 'Restaurant expense report downloaded.');
+      } catch (error) {
+        showSaveMessage('expenseSaveMessage', error.message, true);
+      }
+    });
+  }
+  if (previousButton) {
+    previousButton.addEventListener('click', () => {
+      if (expenseCrudState.page > 1) {
+        expenseCrudState.page -= 1;
+        renderExpenseTable(expenseCrudState.items);
+      }
+    });
+  }
+  if (nextButton) {
+    nextButton.addEventListener('click', () => {
+      const totalPages = Math.ceil(expenseCrudState.filteredItems.length / expenseCrudState.pageSize);
+      if (expenseCrudState.page < totalPages) {
+        expenseCrudState.page += 1;
+        renderExpenseTable(expenseCrudState.items);
+      }
+    });
+  }
 
   if (form) {
     form.addEventListener('submit', async event => {

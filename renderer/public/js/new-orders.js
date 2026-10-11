@@ -345,10 +345,14 @@ function setDraftItems(items) {
 
 function addItemToDraft(menuItemId, quantity, portion) {
   const menuItem = getMenuItemById(menuItemId);
-  if (!menuItem) return false;
+  if (!isDishAvailable(menuItem)) return false;
 
   const normalizedPortion = normalizePortion(portion);
   const normalizedQuantity = Math.max(1, Number(quantity || 1));
+  const draftQuantity = orderCrudState.draftItems
+    .filter(item => Number(item.menuItemId) === Number(menuItemId))
+    .reduce((total, item) => total + Number(item.quantity || 0), 0);
+  if (draftQuantity + normalizedQuantity > Number(menuItem.stockQuantity || 0)) return false;
   const price = getMenuItemPriceByPortion(menuItem, normalizedPortion);
 
   const nextItems = orderCrudState.draftItems.map(item => ({ ...item }));
@@ -371,6 +375,10 @@ function addItemToDraft(menuItemId, quantity, portion) {
 
   setDraftItems(nextItems);
   return true;
+}
+
+function isDishAvailable(dish) {
+  return Boolean(dish?.available) && Number(dish?.stockQuantity || 0) > 0;
 }
 
 function removeItemFromDraft(menuItemId, portion) {
@@ -542,6 +550,9 @@ function getAvailablePortionsForDish(dish) {
 }
 
 function renderDishCard(dish) {
+
+  const isAvailable = isDishAvailable(dish);
+  const stock = Math.max(0, Number(dish.stockQuantity || 0));
   const portions = [
     { key: 'qtr', label: 'Qtr', price: dish.qtr_price },
     { key: 'half', label: 'Half', price: dish.half_price },
@@ -557,7 +568,7 @@ function renderDishCard(dish) {
 
   var footerDet = '';
 
-  if(dish.category.toLowerCase() === 'breads') {
+  if (isAvailable && dish.category.toLowerCase() === 'breads') {
     footerDet = `<div class="menu-item-footer">
           <input type="number" data-dish-qty="${dish.id}" min="1" value="1" style="width:44px;">
           <button type="button" class="add-btn" data-dish-add="${dish.id}">+</button>
@@ -565,10 +576,11 @@ function renderDishCard(dish) {
   }
 
   return `
-    <div class="menu-card" data-dish-id="${dish.id}" data-dish-card="${dish.id}">
+    <div class="menu-card ${isAvailable ? '' : 'is-out-of-stock'}" data-dish-id="${dish.id}" ${isAvailable ? `data-dish-card="${dish.id}"` : ''} aria-disabled="${!isAvailable}">
       <div class="menu-thumb" data-dish-image="${dish.id}"><img src="${getDishImageSrc(dish)}" alt="${dish.name || 'Dish'}" /></div>
       <div class="menu-card-body">
         <div class="menu-item-name">${dish.name || 'Unnamed dish'}</div>
+        <div class="menu-stock-label">${isAvailable ? `${stock} left` : 'Out of stock'}</div>
         ${footerDet}
       </div>
     </div>
@@ -677,7 +689,7 @@ function showPortionPopup(dishId, anchor, portions) {
 
 function addDishFromImage(dishId, anchor) {
   const dish = getMenuItemById(dishId);
-  if (!dish) return;
+  if (!isDishAvailable(dish)) return;
   const portions = getAvailablePortionsForDish(dish);
   if (portions.length > 1) {
     showPortionPopup(dishId, anchor, portions);
@@ -689,7 +701,7 @@ function addDishFromImage(dishId, anchor) {
 
 function increaseDishFromImage(dishId, anchor) {
   const dish = getMenuItemById(dishId);
-  if (!dish) return;
+  if (!isDishAvailable(dish)) return;
   const portions = getAvailablePortionsForDish(dish);
   const portion = dishImageLastPortions.get(Number(dishId));
   if (portions.length > 1 && !portion) {

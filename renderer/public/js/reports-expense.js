@@ -1,6 +1,4 @@
-const reportsState = {
-  expense: null
-};
+let expenseReportRows = [];
 
 function formatMoney(value) {
   return new Intl.NumberFormat('en-IN', {
@@ -24,43 +22,49 @@ function getSelectedDate() {
 function getSelectedDateTo() {
   const dateInputTo = document.getElementById('reportReferenceDateTo');
   return dateInputTo?.value || new Date().toISOString().split('T')[0];
-} 
-
-function renderDemandItems(containerId, demandItems) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
-
-  if (!Array.isArray(demandItems) || !demandItems.length) {
-    container.innerHTML = '<div class="muted">No demand insights available for this period.</div>';
-    return;
-  }
-
-  container.innerHTML = demandItems
-    .slice(0, 5)
-    .map(item => `<span class="demand-pill">${item.name} (${item.quantity})</span>`)
-    .join('');
 }
 
-function renderSalesRows(rowsId, rows) {
-  const tbody = document.getElementById(rowsId);
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, character => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  })[character]);
+}
+
+function formatReportDate(value) {
+  if (!value) return '-';
+  const [year, month, day] = String(value).split('-');
+  return year && month && day ? `${day}/${month}/${year}` : escapeHtml(value);
+}
+
+function renderExpenseRows(rows) {
+  const tbody = document.getElementById('expenseReportRows');
   if (!tbody) return;
 
+  const total = Array.isArray(rows)
+    ? rows.reduce((sum, row) => sum + Number(row?.amount || 0), 0)
+    : 0;
+  const totalElement = document.getElementById('expenseTotalAmount');
+  if (totalElement) totalElement.textContent = formatMoney(total);
+
   if (!Array.isArray(rows) || !rows.length) {
-    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No details this period.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No expenses found for this period.</td></tr>';
     return;
   }
 
   tbody.innerHTML = rows.map(row => `
     <tr>
-      <td>${getMonthName(row.month) || '-'}</td>
-      <td>${formatMoney(row.totalExpenses || 0)}</td>
+      <td>${formatReportDate(row.date)}</td>
+      <td>${escapeHtml(row.expenseType || '-')}</td>
+      <td>${escapeHtml(row.details || '-')}</td>
+      <td>${escapeHtml(row.staffName || '-')}</td>
+      <td>${escapeHtml(row.paymentMode || '-')}</td>
+      <td>${formatMoney(row.amount)}</td>
     </tr>
   `).join('');
-}
-
-function renderPeriod(period, report) {
-  reportsState[period] = report;
-  renderSalesRows(`${period}SalesRows`, report || []);
 }
 
 function escapeCsvCell(value) {
@@ -68,17 +72,19 @@ function escapeCsvCell(value) {
   return `"${text.replace(/"/g, '""')}"`;
 }
 
-function buildCsvContent(period, report) {
-  const rows = Array.isArray(report) ? report : [];
+function buildCsvContent(rows) {
   const csvLines = [
-    'expense Report',
-    ['Month', 'expense Collected', 'Taxable Sales'].map(escapeCsvCell).join(',')
+    ['Date', 'Category', 'Details', 'Staff Member', 'Payment Mode', 'Amount'].map(escapeCsvCell).join(',')
   ];
 
   rows.forEach(row => {
     csvLines.push([
-      getMonthName(row?.month) || '-',
-      Number(row?.totalExpenses || 0)
+      row?.date || '-',
+      row?.expenseType || '-',
+      row?.details || '-',
+      row?.staffName || '-',
+      row?.paymentMode || '-',
+      Number(row?.amount || 0)
     ].map(escapeCsvCell).join(','));
   });
 
@@ -97,21 +103,20 @@ function downloadCsv(filename, content) {
   URL.revokeObjectURL(url);
 }
 
-function exportPeriodCsv(period) {
-  const report = reportsState[period];
+function exportExpenseReportCsv() {
   const selectedDate = getSelectedDate();
-  const content = buildCsvContent(period, report);
-  const filename = `expense-report-${period}-${selectedDate}.csv`;
+  const selectedDateTo = getSelectedDateTo();
+  const content = buildCsvContent(expenseReportRows);
+  const filename = `expense-report-${selectedDate}-to-${selectedDateTo}.csv`;
   downloadCsv(filename, content);
-  setReportsMessage(`${period.charAt(0).toUpperCase() + period.slice(1)} report exported as CSV.`);
+  setReportsMessage('Expense details exported as CSV.');
 }
 
-async function loadReportsOverview() {
+async function loadExpenseReport() {
   const selectedDate = getSelectedDate();
   const selectedDateTo = getSelectedDateTo();
   setReportsMessage('Loading report data...');
-const headerRestaurantId = document.getElementById('header-restaurant-id')?.value || '';
-console.log('Server context:', headerRestaurantId);
+  const headerRestaurantId = document.getElementById('header-restaurant-id')?.value || '';
   try {
     const response = await fetch(`/api/reports/expenses/${headerRestaurantId}?dateFrom=${encodeURIComponent(selectedDate)}&dateTo=${encodeURIComponent(selectedDateTo)}`);
     if (!response.ok) {
@@ -119,7 +124,8 @@ console.log('Server context:', headerRestaurantId);
     }
 
     const data = await response.json();
-    renderPeriod('expense', data || {});
+  expenseReportRows = Array.isArray(data) ? data : [];
+  renderExpenseRows(expenseReportRows);
     setReportsMessage('Reports refreshed successfully.');
   } catch (error) {
     setReportsMessage(error.message, true);
@@ -141,21 +147,12 @@ function initializeReportsPage() {
   }
 
   if (refreshButton) {
-    refreshButton.addEventListener('click', loadReportsOverview);
+    refreshButton.addEventListener('click', loadExpenseReport);
   }
-
-  // if (dateInput) {
-  //   dateInput.addEventListener('change', loadReportsOverview);
-  // }
-  // if (dateInputTo) {
-  //   dateInputTo.addEventListener('change', loadReportsOverview);
-  // }
 
   if (expenseExportButton) {
-    expenseExportButton.addEventListener('click', () => exportPeriodCsv('expense'));
+    expenseExportButton.addEventListener('click', exportExpenseReportCsv);
   }
-
-  // loadReportsOverview();
 }
 
 document.addEventListener('DOMContentLoaded', () => {

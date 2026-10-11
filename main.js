@@ -212,6 +212,15 @@ async function proxyApi(req, res) {
       console.warn(`[proxyApi] backend ${backendResponse.status} for ${req.method} ${backendUrl}`, backendResponse.data);
     }
 
+    const contentType = backendResponse.headers['content-type'] || '';
+    const contentDisposition = backendResponse.headers['content-disposition'];
+    if (contentDisposition || contentType.startsWith('text/csv')) {
+      if (contentType) res.set('Content-Type', contentType);
+      if (contentDisposition) res.set('Content-Disposition', contentDisposition);
+      return res.status(backendResponse.status).send(backendResponse.data);
+    }
+
+
     res.status(backendResponse.status).json(backendResponse.data);
   } catch (error) {
     console.error(`[proxyApi] error calling backend for ${req.method} ${req.path}:`, error.message);
@@ -326,6 +335,7 @@ app.get('/logout', (req, res) => {
 });
 app.get('/dashboard', requireAuth, (req, res) => res.render('dashboard', getViewContext(req, 'Dashboard | RestaurantOS')));
 app.get('/menu', requireAuth, (req, res) => res.render('menu', getViewContext(req, 'Menu Management | RestaurantOS')));
+app.get('/menu-inventory', requireAuth, (req, res) => res.render('menu-inventory', getViewContext(req, 'Menu Inventory | RestaurantOS')));
 app.get('/orders', requireAuth, (req, res) => res.redirect('/orders/open'));
 app.get('/orders/open', requireAuth, (req, res) => res.render('orders', getViewContext(req, 'Open Orders | RestaurantOS')));
 app.get('/orders/closed', requireAuth, (req, res) => res.render('closed-orders', getViewContext(req, 'Closed Orders | RestaurantOS')));

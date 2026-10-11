@@ -1,11 +1,62 @@
 const staffExpenseState = {
   items: [],
-  editingId: null
+  filteredItems: [],
+  editingId: null,
+  searchTerm: '',
+  dateFrom: '',
+  dateTo: '',
+  page: 1,
+  pageSize: 8
 };
+
+function isStaffExpenseWithinDateRange(value) {
+  const date = String(value || '').slice(0, 10);
+  return Boolean(date)
+    && (!staffExpenseState.dateFrom || date >= staffExpenseState.dateFrom)
+    && (!staffExpenseState.dateTo || date <= staffExpenseState.dateTo);
+}
+
+async function downloadStaffExpenseReport() {
+  const params = new URLSearchParams();
+  if (staffExpenseState.dateFrom) params.set('from', staffExpenseState.dateFrom);
+  if (staffExpenseState.dateTo) params.set('to', staffExpenseState.dateTo);
+  const query = params.toString();
+  const response = await fetch(`/api/staff-expenses/export/${headerRestaurantId}${query ? `?${query}` : ''}`);
+  if (!response.ok) throw new Error(`Unable to download report (${response.status}).`);
+
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(await response.blob());
+  link.download = 'staff-expenses.csv';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(link.href);
+}
+
+function updateStaffExpensePagination() {
+  const summary = document.getElementById('staffExpensesPageSummary');
+  const indicator = document.getElementById('staffExpensesPageIndicator');
+  const previousButton = document.getElementById('staffExpensesPrevButton');
+  const nextButton = document.getElementById('staffExpensesNextButton');
+  const filtered = staffExpenseState.filteredItems.length;
+  const totalPages = Math.max(1, Math.ceil(filtered / staffExpenseState.pageSize));
+  const start = filtered ? ((staffExpenseState.page - 1) * staffExpenseState.pageSize) + 1 : 0;
+  const end = Math.min(staffExpenseState.page * staffExpenseState.pageSize, filtered);
+
+  if (summary) {
+    summary.textContent = filtered
+      ? `Showing ${start}-${end} of ${filtered} staff expenses`
+      : (staffExpenseState.items.length ? 'No staff expenses match your search.' : 'No staff expenses recorded yet.');
+  }
+  if (indicator) indicator.textContent = `Page ${filtered ? staffExpenseState.page : 0} of ${filtered ? totalPages : 0}`;
+  if (previousButton) previousButton.disabled = staffExpenseState.page <= 1 || !filtered;
+  if (nextButton) nextButton.disabled = staffExpenseState.page >= totalPages || !filtered;
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   bindCommonChrome();
   setupStaffExpenseSave();
+  setupStaffExpenseSearchAndPagination();
   loadAttendanceMeta();
   loadStaffExpenseMeta();
   loadStaffExpenses();
@@ -96,8 +147,7 @@ function loadStaffExpenses() {
   return fetch(`/api/staff-expenses/${headerRestaurantId}`)
     .then(res => res.json())
     .then(data => {
-      staffExpenseState.items = Array.isArray(data) ? data : [];
-      renderStaffExpenses(staffExpenseState.items);
+      renderStaffExpenses(data);
     })
     .catch(() => renderStaffExpenses([]));
 }
@@ -106,15 +156,29 @@ function renderStaffExpenses(data) {
   const list = document.getElementById('staffExpensesTableBody');
   if (!list) return;
 
-  const records = Array.isArray(data) ? data : [];
+  staffExpenseState.items = Array.isArray(data) ? data : [];
+  const query = staffExpenseState.searchTerm.trim().toLowerCase();
+  staffExpenseState.filteredItems = staffExpenseState.items.filter(item => {
+    const matchesSearch = !query || [item.staffMember?.fullName, item.expenseAmount, item.paymentMode, item.expenseDetails, item.date]
+      .filter(value => value !== null && value !== undefined)
+      .some(value => String(value).toLowerCase().includes(query));
+    return matchesSearch && isStaffExpenseWithinDateRange(item.date);
+  });
+  const totalPages = Math.max(1, Math.ceil(staffExpenseState.filteredItems.length / staffExpenseState.pageSize));
+  if (staffExpenseState.page > totalPages) staffExpenseState.page = totalPages;
+  const records = staffExpenseState.filteredItems.slice(
+    (staffExpenseState.page - 1) * staffExpenseState.pageSize,
+    staffExpenseState.page * staffExpenseState.pageSize
+  );
   const role = getServerContext().role || '';
-  const canManage = ['admin', 'manager', 'super admin'].includes(role.toLowerCase());
+  const canManage = ['admin', 'super admin'].includes(role.toLowerCase());
+  updateStaffExpensePagination();
   if (!records.length) {
-    list.innerHTML = `<tr><td colspan="${canManage ? 6 : 5}" class="empty-state">No staff expenses recorded yet.</td></tr>`;
+    list.innerHTML = `<tr><td colspan="${canManage ? 6 : 5}" class="empty-state">${staffExpenseState.items.length ? 'No staff expenses match your search.' : 'No staff expenses recorded yet.'}</td></tr>`;
     return;
   }
 
-  list.innerHTML = records.slice(0, 8).map(item => `
+  list.innerHTML = records.map(item => `
     <tr>
       <td>${item.staffMember?.fullName || 'Staff member'}</td>
       <td>${formatCurrency(Number(item.expenseAmount || 0))}</td>
@@ -144,6 +208,58 @@ function renderStaffExpenses(data) {
       showSaveMessage('staffExpenseSaveMessage', error.message || 'Unable to process staff expense.', true);
     }
   };
+}
+
+function setupStaffExpenseSearchAndPagination() {
+  const searchInput = document.getElementById('staffExpensesSearchInput');
+  const previousButton = document.getElementById('staffExpensesPrevButton');
+  const nextButton = document.getElementById('staffExpensesNextButton');
+  const fromInput = document.getElementById('staffExpensesDateFrom');
+  const toInput = document.getElementById('staffExpensesDateTo');
+  const downloadButton = document.getElementById('downloadStaffExpensesReportButton');
+
+  if (searchInput) {
+    searchInput.addEventListener('input', event => {
+      staffExpenseState.searchTerm = event.target.value || '';
+      staffExpenseState.page = 1;
+      renderStaffExpenses(staffExpenseState.items);
+    });
+  }
+  [fromInput, toInput].filter(Boolean).forEach(input => {
+    input.addEventListener('change', () => {
+      staffExpenseState.dateFrom = fromInput?.value || '';
+      staffExpenseState.dateTo = toInput?.value || '';
+      staffExpenseState.page = 1;
+      renderStaffExpenses(staffExpenseState.items);
+    });
+  });
+  if (downloadButton) {
+    downloadButton.addEventListener('click', async () => {
+      try {
+        await downloadStaffExpenseReport();
+        showSaveMessage('staffExpenseSaveMessage', 'Staff expense report downloaded.');
+      } catch (error) {
+        showSaveMessage('staffExpenseSaveMessage', error.message, true);
+      }
+    });
+  }
+  if (previousButton) {
+    previousButton.addEventListener('click', () => {
+      if (staffExpenseState.page > 1) {
+        staffExpenseState.page -= 1;
+        renderStaffExpenses(staffExpenseState.items);
+      }
+    });
+  }
+  if (nextButton) {
+    nextButton.addEventListener('click', () => {
+      const totalPages = Math.ceil(staffExpenseState.filteredItems.length / staffExpenseState.pageSize);
+      if (staffExpenseState.page < totalPages) {
+        staffExpenseState.page += 1;
+        renderStaffExpenses(staffExpenseState.items);
+      }
+    });
+  }
 }
 
 function editStaffExpense(id) {

@@ -1,7 +1,31 @@
 const customerCrudState = {
   items: [],
-  editingId: null
+  filteredItems: [],
+  editingId: null,
+  searchTerm: '',
+  page: 1,
+  pageSize: 8
 };
+
+function updateCustomerPagination() {
+  const summary = document.getElementById('customersPageSummary');
+  const indicator = document.getElementById('customersPageIndicator');
+  const previousButton = document.getElementById('customersPrevButton');
+  const nextButton = document.getElementById('customersNextButton');
+  const filtered = customerCrudState.filteredItems.length;
+  const totalPages = Math.max(1, Math.ceil(filtered / customerCrudState.pageSize));
+  const start = filtered ? ((customerCrudState.page - 1) * customerCrudState.pageSize) + 1 : 0;
+  const end = Math.min(customerCrudState.page * customerCrudState.pageSize, filtered);
+
+  if (summary) {
+    summary.textContent = filtered
+      ? `Showing ${start}-${end} of ${filtered} customers`
+      : (customerCrudState.items.length ? 'No customers match your search.' : 'No customers available.');
+  }
+  if (indicator) indicator.textContent = `Page ${filtered ? customerCrudState.page : 0} of ${filtered ? totalPages : 0}`;
+  if (previousButton) previousButton.disabled = customerCrudState.page <= 1 || !filtered;
+  if (nextButton) nextButton.disabled = customerCrudState.page >= totalPages || !filtered;
+}
 
 function setCustomerFormMode(isEdit) {
   const title = document.getElementById('customerModalTitle');
@@ -26,12 +50,26 @@ function renderCustomerTable(items) {
   const body = document.getElementById('customersTableBody');
   if (!body) return;
 
-  if (!items.length) {
-    body.innerHTML = '<tr><td colspan="7" class="empty-state">No customers available.</td></tr>';
+  customerCrudState.items = Array.isArray(items) ? items : [];
+  const query = customerCrudState.searchTerm.trim().toLowerCase();
+  customerCrudState.filteredItems = customerCrudState.items.filter(item => !query || [
+    item.name, item.phone, item.preferences
+  ].filter(Boolean).some(value => String(value).toLowerCase().includes(query)));
+  const totalPages = Math.max(1, Math.ceil(customerCrudState.filteredItems.length / customerCrudState.pageSize));
+  if (customerCrudState.page > totalPages) customerCrudState.page = totalPages;
+  const pageItems = customerCrudState.filteredItems.slice(
+    (customerCrudState.page - 1) * customerCrudState.pageSize,
+    customerCrudState.page * customerCrudState.pageSize
+  );
+
+  updateCustomerPagination();
+
+  if (!pageItems.length) {
+    body.innerHTML = `<tr><td colspan="7" class="empty-state">${customerCrudState.items.length ? 'No customers match your search.' : 'No customers available.'}</td></tr>`;
     return;
   }
 
-  body.innerHTML = items.map(item => `
+  body.innerHTML = pageItems.map(item => `
     <tr>
       <td>${item.name || 'Unnamed customer'}</td>
       <td>${item.phone || '-'}</td>
@@ -52,8 +90,7 @@ function renderCustomerTable(items) {
 async function loadCustomers() {
   const response = await fetch('/api/customers');
   const data = await response.json();
-  customerCrudState.items = Array.isArray(data) ? data : [];
-  renderCustomerTable(customerCrudState.items);
+  renderCustomerTable(data);
 }
 
 function openCustomerForEdit(id) {
@@ -107,6 +144,9 @@ function setupCustomerCrud() {
   const closeButton = document.getElementById('closeCustomerFormButton');
   const cancelButton = document.getElementById('cancelCustomerFormButton');
   const backdrop = document.getElementById('customerModalBackdrop');
+  const searchInput = document.getElementById('customersSearchInput');
+  const previousButton = document.getElementById('customersPrevButton');
+  const nextButton = document.getElementById('customersNextButton');
 
   if (openButton) {
     openButton.addEventListener('click', () => {
@@ -118,6 +158,31 @@ function setupCustomerCrud() {
   if (closeButton) closeButton.addEventListener('click', () => toggleModal('customerModal', 'customerModalBackdrop', false));
   if (cancelButton) cancelButton.addEventListener('click', () => toggleModal('customerModal', 'customerModalBackdrop', false));
   if (backdrop) backdrop.addEventListener('click', () => toggleModal('customerModal', 'customerModalBackdrop', false));
+
+  if (searchInput) {
+    searchInput.addEventListener('input', event => {
+      customerCrudState.searchTerm = event.target.value || '';
+      customerCrudState.page = 1;
+      renderCustomerTable(customerCrudState.items);
+    });
+  }
+  if (previousButton) {
+    previousButton.addEventListener('click', () => {
+      if (customerCrudState.page > 1) {
+        customerCrudState.page -= 1;
+        renderCustomerTable(customerCrudState.items);
+      }
+    });
+  }
+  if (nextButton) {
+    nextButton.addEventListener('click', () => {
+      const totalPages = Math.ceil(customerCrudState.filteredItems.length / customerCrudState.pageSize);
+      if (customerCrudState.page < totalPages) {
+        customerCrudState.page += 1;
+        renderCustomerTable(customerCrudState.items);
+      }
+    });
+  }
 
   if (form) {
     form.addEventListener('submit', async event => {
