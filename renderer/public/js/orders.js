@@ -1018,7 +1018,7 @@ function renderOrdersCards(items) {
           <span class="status-pill ${statusClass(order.status)}">${order.status == 'paid-not-delivered' ? 'Paid' : order.status || 'Pending'}</span>
           <span class="status-pill info">${itemCount} dish${itemCount === 1 ? '' : 'es'}</span>
         </div>
-            ${order.customer ? '<div style=""><b>Customer Name:</b> ' + order.customer.name + ' (' + order.customer.phone + ')</div>' : ''}
+            ${order.customer ? '<div style=""><b>Customer Name:</b> ' + order.customer.name + ' (' + (order.customer.phone ? order.customer.phone : (order.order_type === 'car' ? order.customer.carNumber : '')) + ')</div>' : ''}
             ${order.server_name ? '<div style=""><b>Server: </b>' + order.server_name + '</div>' : ''}
         <table class="table">
         <thead>

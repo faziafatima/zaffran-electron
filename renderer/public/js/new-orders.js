@@ -205,8 +205,11 @@ async function resolveCustomerForCarOrder() {
   //   return;
   // }
   
-  if (!phone) {
-    return;
+  if (!phone && !carNumber) {
+    if (name || address) {
+      throw new Error('Enter a mobile number or car number to save the customer details.');
+    }
+    return 0;
   }
 
   const response = await fetch('/api/customers/resolve', {
